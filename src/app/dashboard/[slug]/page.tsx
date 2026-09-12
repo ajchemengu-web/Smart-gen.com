@@ -34,11 +34,10 @@ const DASHBOARDS: Record<
       "Data entry and facial enrollment only. Access expires once " +
       "the assigned task is marked complete.",
   },
-  guard_dashboard: {
-    title: "Guard",
-    description:
-      "Live queue of recognized faces, Admit/Reject for unknown guests.",
-  },
+  // guard_dashboard has a real implementation at
+  // src/app/dashboard/guard_dashboard/page.tsx, which Next.js
+  // resolves in preference to this dynamic [slug] route for that
+  // exact path — it is intentionally not listed here.
 };
 
 export default async function DashboardPage({

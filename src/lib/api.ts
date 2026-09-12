@@ -14,15 +14,16 @@ export class ApiError extends Error {
   }
 }
 
-async function apiRequest<T>(path: string, body: object): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit
+): Promise<T> {
   let response: Response;
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
       cache: "no-store",
+      ...init,
     });
   } catch {
     throw new ApiError(
@@ -43,6 +44,18 @@ async function apiRequest<T>(path: string, body: object): Promise<T> {
   return data as T;
 }
 
+function postJson<T>(path: string, body: object) {
+  return request<T>(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+// ============================================================
+// LOGIN / ENROLLMENT (docs/PRD.md §5, §9)
+// ============================================================
+
 export type LoginResult = {
   username: string;
   email: string;
@@ -54,7 +67,7 @@ export type LoginResult = {
 export type EnrollResult = LoginResult;
 
 export function login(username: string, password: string) {
-  return apiRequest<LoginResult>("/login", { username, password });
+  return postJson<LoginResult>("/login", { username, password });
 }
 
 export function enroll(fields: {
@@ -65,5 +78,66 @@ export function enroll(fields: {
   admin_tier?: string;
   linked_person_id?: string;
 }) {
-  return apiRequest<EnrollResult>("/enroll", fields);
+  return postJson<EnrollResult>("/enroll", fields);
+}
+
+// ============================================================
+// GUARD DASHBOARD (docs/PRD.md §6.2)
+// ============================================================
+
+export type PendingUnknown = {
+  unknown_id: string;
+  image_path: string;
+  status: string;
+  detected_at: string;
+};
+
+export type AccessLogEntry = {
+  id: number;
+  person_type: string;
+  person_identifier: string | null;
+  entrance: string | null;
+  recognition_score: number | null;
+  liveness_score: number | null;
+  decision: string | null;
+  guard_id: string | null;
+  timestamp: string;
+};
+
+export function getPendingUnknowns() {
+  return request<{
+    total_pending: number;
+    unknown_persons: PendingUnknown[];
+  }>("/guard/pending");
+}
+
+export function getAccessLogs() {
+  return request<AccessLogEntry[]>("/access-logs");
+}
+
+export function admitUnknown(unknownId: string) {
+  return request(`/guard/admit/${encodeURIComponent(unknownId)}`, {
+    method: "POST",
+  });
+}
+
+export function rejectUnknown(unknownId: string) {
+  return request(`/guard/reject/${encodeURIComponent(unknownId)}`, {
+    method: "POST",
+  });
+}
+
+// ============================================================
+// ROUTE HANDLER HELPER
+// ============================================================
+//
+// Shared shape for the Next.js Route Handlers under src/app/api/*
+// that proxy these calls to the browser (so the client never talks
+// to API_BASE_URL directly).
+
+export function apiErrorResponse(error: unknown) {
+  const status = error instanceof ApiError ? error.status || 502 : 502;
+  const message =
+    error instanceof ApiError ? error.message : "Request failed";
+  return { status, body: { detail: message } };
 }

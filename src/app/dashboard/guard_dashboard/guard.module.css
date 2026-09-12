@@ -1,0 +1,133 @@
+.page {
+  min-height: 100vh;
+  padding: 2.5rem 1.5rem;
+  background: #0b0d12;
+  color: #e7e9ee;
+}
+
+.container {
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+.container h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.5rem;
+}
+
+.subtitle {
+  color: #9aa2b1;
+  font-size: 0.9rem;
+  margin: 0 0 2rem;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.banner {
+  background: rgba(228, 179, 74, 0.12);
+  border: 1px solid rgba(228, 179, 74, 0.35);
+  color: #e4b34a;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.section h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.countBadge {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #9aa2b1;
+}
+
+.empty {
+  color: #9aa2b1;
+  font-size: 0.9rem;
+}
+
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.queueItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #14171d;
+  border: 1px solid #262a33;
+  border-radius: 0.6rem;
+  padding: 0.8rem 1rem;
+  flex-wrap: wrap;
+}
+
+.meta {
+  display: block;
+  color: #9aa2b1;
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.admit,
+.reject {
+  border: none;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+}
+
+.admit {
+  background: #2fa66a;
+}
+
+.reject {
+  background: #d9534f;
+}
+
+.admit:disabled,
+.reject:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid #262a33;
+}
+
+.table th {
+  color: #9aa2b1;
+  font-weight: 500;
+}
