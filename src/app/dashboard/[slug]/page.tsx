@@ -5,18 +5,11 @@ const DASHBOARDS: Record<
   string,
   { title: string; description: string }
 > = {
-  original_admin_dashboard: {
-    title: "Original Admin",
-    description:
-      "System owner: monitoring dashboard across SmartAccess and " +
-      "SmartAttendance, admin management, camera management control.",
-  },
-  security_admin_dashboard: {
-    title: "Security Admin",
-    description:
-      "Oversight for SmartAccess: camera status, camera access " +
-      "configuration, enrollment control.",
-  },
+  // original_admin_dashboard and security_admin_dashboard have real
+  // implementations at src/app/dashboard/original_admin_dashboard/
+  // and .../security_admin_dashboard/, which Next.js resolves in
+  // preference to this dynamic [slug] route for those exact paths —
+  // intentionally not listed here.
   timetabling_admin_dashboard: {
     title: "Directorate of Timetabling",
     description:

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { AccessLogEntry, PendingUnknown } from "@/lib/api";
+import AccessLogTable from "@/components/AccessLogTable";
 import styles from "./guard.module.css";
 
 // Caps per docs/PRD.md §6.2: a guard should never face an unbounded
@@ -124,43 +125,7 @@ export default function GuardDashboardClient() {
 
       <section className={styles.section}>
         <h2>Recent Access Log</h2>
-
-        {shownLogs.length === 0 ? (
-          <p className={styles.empty}>No access events yet.</p>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Type</th>
-                <th>Identifier</th>
-                <th>Decision</th>
-                <th>Score</th>
-                <th>Liveness</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shownLogs.map((log) => (
-                <tr key={log.id}>
-                  <td>{new Date(log.timestamp).toLocaleTimeString()}</td>
-                  <td>{log.person_type}</td>
-                  <td>{log.person_identifier ?? "—"}</td>
-                  <td>{log.decision ?? "—"}</td>
-                  <td>
-                    {log.recognition_score != null
-                      ? log.recognition_score.toFixed(2)
-                      : "—"}
-                  </td>
-                  <td>
-                    {log.liveness_score != null
-                      ? log.liveness_score.toFixed(2)
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <AccessLogTable logs={shownLogs} />
       </section>
     </div>
   );

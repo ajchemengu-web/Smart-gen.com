@@ -1,0 +1,46 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.banner {
+  background: rgba(228, 179, 74, 0.12);
+  border: 1px solid rgba(228, 179, 74, 0.35);
+  color: #e4b34a;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+}
+
+.stat {
+  background: #14171d;
+  border: 1px solid #262a33;
+  border-radius: 0.6rem;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.statValue {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: #9aa2b1;
+}
+
+.section h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.9rem;
+}

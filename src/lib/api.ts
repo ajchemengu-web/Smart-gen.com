@@ -128,6 +128,34 @@ export function rejectUnknown(unknownId: string) {
 }
 
 // ============================================================
+// ADMIN OVERVIEW (docs/PRD.md §8)
+// ============================================================
+
+export type Student = {
+  student_id: string;
+  full_name: string;
+  admission_number: string;
+  hostel: string;
+  room: string;
+};
+
+export type Guest = {
+  guest_id: string;
+  status: string;
+  admitted_by: string | null;
+  admitted_at: string | null;
+  expires_at: string | null;
+};
+
+export function getStudents() {
+  return request<Student[]>("/students");
+}
+
+export function getGuests() {
+  return request<Guest[]>("/guests");
+}
+
+// ============================================================
 // ROUTE HANDLER HELPER
 // ============================================================
 //
