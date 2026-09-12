@@ -1,0 +1,99 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { ApiError, enroll, login } from "@/lib/api";
+
+export type FormState = {
+  error?: string;
+  message?: string;
+} | undefined;
+
+const DASHBOARD_LABELS: Record<string, string> = {
+  original_admin_dashboard: "Original Admin",
+  security_admin_dashboard: "Security Admin",
+  timetabling_admin_dashboard: "Timetabling Admin",
+  dean_admin_dashboard: "Dean of School",
+  enrollment_dashboard: "Enrollment (Temporary Admin)",
+  guard_dashboard: "Guard",
+};
+
+export async function loginAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const username = String(formData.get("username") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+
+  if (!username || !password) {
+    return { error: "Username and password are required." };
+  }
+
+  let result;
+
+  try {
+    result = await login(username, password);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { error: error.message };
+    }
+    return { error: "Something went wrong. Please try again." };
+  }
+
+  if (!result.dashboard || result.dashboard === "smartattendance_app") {
+    // Students and lecturers belong in the SmartAttendance app, not
+    // this web platform (docs/PRD.md §4) — there is nothing for
+    // them to land on here.
+    return {
+      message:
+        result.dashboard === "smartattendance_app"
+          ? "This account uses the SmartAttendance app, not this website."
+          : "This account has no dashboard on this platform.",
+    };
+  }
+
+  redirect(`/dashboard/${result.dashboard}`);
+}
+
+export async function enrollAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const username = String(formData.get("username") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const email = String(formData.get("email") ?? "").trim();
+  const role = String(formData.get("role") ?? "");
+  const adminTier = String(formData.get("admin_tier") ?? "").trim();
+  const linkedPersonId = String(
+    formData.get("linked_person_id") ?? ""
+  ).trim();
+
+  if (!username || !password || !email || !role) {
+    return { error: "Username, password, email, and role are required." };
+  }
+
+  try {
+    const result = await enroll({
+      username,
+      password,
+      email,
+      role,
+      admin_tier: role === "ADMIN" ? adminTier : undefined,
+      linked_person_id: linkedPersonId || undefined,
+    });
+
+    const dashboardLabel = result.dashboard
+      ? (DASHBOARD_LABELS[result.dashboard] ?? result.dashboard)
+      : "no dashboard (SmartAttendance app or none)";
+
+    return {
+      message: `Created ${result.username} (${result.role}${
+        result.admin_tier ? ` / ${result.admin_tier}` : ""
+      }) — routes to: ${dashboardLabel}.`,
+    };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { error: error.message };
+    }
+    return { error: "Something went wrong. Please try again." };
+  }
+}
