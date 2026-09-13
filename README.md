@@ -32,20 +32,30 @@ you so rather than showing a dashboard.
   timetable entries filtered by course and year; a Dean's
   department-scoped student roster, classification counts, unit/
   timetable totals, department timetable, and venue cameras; camera
-  management; lecturer profile registration; a Temporary Admin's
-  enrollment-only form — per `docs/PRD.md` §8). The Original Admin
-  has full camera control (provision/configure/remove) and manages
-  lecturer profiles (`src/components/LecturerManagementClient.tsx`
-  — register a lecturer's name/department here first, then use
-  their Lecturer ID as the enrollment form's "linked person ID" so
-  SmartAttendance can resolve them to their own units); the Security
-  Admin can configure/change camera status but not provision or
-  remove one; the Dean gets a read-only, department-filtered camera
-  view (`src/components/CameraManagementClient.tsx`). The Dean
-  dashboard's "class logs" stays out of scope until the
-  SmartAttendance classroom-camera pipeline exists. Every dashboard
-  slug `auth_service.resolve_dashboard()` can hand back now has a
-  real page — `/dashboard/[slug]` is just a fallback for any future/
+  management; lecturer profile registration; access analytics +
+  false-positive flagging; a Temporary Admin's enrollment-only form
+  — per `docs/PRD.md` §8, §13). The Original Admin has full camera
+  control (provision/configure/remove), manages lecturer profiles
+  (`src/components/LecturerManagementClient.tsx` — register a
+  lecturer's name/department here first, then use their Lecturer ID
+  as the enrollment form's "linked person ID" so SmartAttendance can
+  resolve them to their own units), and sees an Analytics section
+  (`src/components/AnalyticsClient.tsx` — counts by decision,
+  movement by entrance/person type, false-positive rate, average
+  recognition/liveness scores, over a selectable date range); the
+  Security Admin can configure/change camera status but not
+  provision or remove one; the Dean gets a read-only,
+  department-filtered camera view
+  (`src/components/CameraManagementClient.tsx`). Both the Guard and
+  Admin dashboards' access log
+  (`src/components/AccessLogTable.tsx`) let a Guard or Admin flag a
+  VERIFIED entry as a false positive after determining, outside this
+  system, that it matched the wrong person — there's no ground truth
+  in the data to infer that automatically. The Dean dashboard's
+  "class logs" stays out of scope until the SmartAttendance
+  classroom-camera pipeline exists. Every dashboard slug
+  `auth_service.resolve_dashboard()` can hand back now has a real
+  page — `/dashboard/[slug]` is just a fallback for any future/
   unmapped slug.
 - `src/proxy.ts` protects every `/dashboard/*` route and `/enroll`:
   no session -> redirected to `/login`; logged in but the URL

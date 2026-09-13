@@ -130,6 +130,8 @@ export type AccessLogEntry = {
   liveness_score: number | null;
   decision: string | null;
   guard_id: string | null;
+  false_positive: boolean;
+  false_positive_reason: string | null;
   timestamp: string;
 };
 
@@ -142,6 +144,22 @@ export function getPendingUnknowns(token: string) {
 
 export function getAccessLogs(token: string) {
   return request<AccessLogEntry[]>("/access-logs", undefined, token);
+}
+
+export function flagAccessLogFalsePositive(
+  accessLogId: number,
+  reason: string,
+  token: string
+) {
+  return request(
+    `/access-logs/${accessLogId}/false-positive`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    },
+    token
+  );
 }
 
 export function admitUnknown(unknownId: string, token: string) {
@@ -442,6 +460,27 @@ export function createLecturer(
   token: string
 ) {
   return postJson<Lecturer>("/lecturers", fields, token);
+}
+
+// ============================================================
+// ANALYTICS (docs/PRD.md §13, Phase 3)
+// ============================================================
+
+export type AnalyticsSummary = {
+  total_access_attempts: number;
+  counts_by_decision: Record<string, number>;
+  movement_by_entrance: Record<string, number>;
+  movement_by_person_type: Record<string, number>;
+  verified_count: number;
+  false_positive_count: number;
+  false_positive_rate: number | null;
+  average_recognition_score: number | null;
+  average_liveness_score: number | null;
+};
+
+export function getAnalyticsSummary(token: string, sinceDays?: number) {
+  const query = sinceDays != null ? `?since_days=${sinceDays}` : "";
+  return request<AnalyticsSummary>(`/analytics/summary${query}`, undefined, token);
 }
 
 // ============================================================
