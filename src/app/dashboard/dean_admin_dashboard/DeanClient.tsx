@@ -7,6 +7,7 @@ import type {
   DeanSummary,
   TimetableEntry,
 } from "@/lib/api";
+import { anyUnauthorized, handleUnauthorized } from "@/lib/handleUnauthorized";
 import tableStyles from "@/components/DataTable.module.css";
 import styles from "./dean.module.css";
 
@@ -30,6 +31,11 @@ export default function DeanClient() {
           fetch(`/api/timetable${query}`, { cache: "no-store" }),
           fetch(`/api/cameras${query}`, { cache: "no-store" }),
         ]);
+
+      if (anyUnauthorized([summaryRes, rosterRes, timetableRes, camerasRes])) {
+        await handleUnauthorized();
+        return;
+      }
 
       if (
         !summaryRes.ok ||
@@ -63,6 +69,11 @@ export default function DeanClient() {
             fetch("/api/timetable", { cache: "no-store" }),
             fetch("/api/cameras", { cache: "no-store" }),
           ]);
+
+        if (anyUnauthorized([summaryRes, rosterRes, timetableRes, camerasRes])) {
+          if (!cancelled) await handleUnauthorized();
+          return;
+        }
 
         if (
           !summaryRes.ok ||

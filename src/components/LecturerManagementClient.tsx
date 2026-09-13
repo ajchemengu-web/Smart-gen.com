@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Lecturer } from "@/lib/api";
+import { handleUnauthorized } from "@/lib/handleUnauthorized";
 import tableStyles from "@/components/DataTable.module.css";
 import styles from "./LecturerManagementClient.module.css";
 
@@ -17,6 +18,11 @@ export default function LecturerManagementClient() {
   async function load() {
     try {
       const response = await fetch("/api/lecturers", { cache: "no-store" });
+
+      if (response.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
 
       if (!response.ok) {
         setError("Backend returned an error.");
@@ -36,6 +42,11 @@ export default function LecturerManagementClient() {
     async function initialLoad() {
       try {
         const response = await fetch("/api/lecturers", { cache: "no-store" });
+
+        if (response.status === 401) {
+          if (!cancelled) await handleUnauthorized();
+          return;
+        }
 
         if (!response.ok) {
           if (!cancelled) setError("Backend returned an error.");

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { AccessLogEntry, Guest, Student } from "@/lib/api";
 import AccessLogTable from "@/components/AccessLogTable";
+import { anyUnauthorized, handleUnauthorized } from "@/lib/handleUnauthorized";
 import styles from "./AdminOverviewClient.module.css";
 import tableStyles from "./DataTable.module.css";
 
@@ -25,6 +26,11 @@ export default function AdminOverviewClient() {
           fetch("/api/guests", { cache: "no-store" }),
           fetch("/api/access-logs", { cache: "no-store" }),
         ]);
+
+        if (anyUnauthorized([studentsRes, guestsRes, logsRes])) {
+          if (!cancelled) await handleUnauthorized();
+          return;
+        }
 
         if (!studentsRes.ok || !guestsRes.ok || !logsRes.ok) {
           if (!cancelled) setError("Backend returned an error. Retrying…");

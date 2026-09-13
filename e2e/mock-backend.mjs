@@ -17,16 +17,24 @@ const ACCOUNTS = {
   guard1: { password: "correct", role: "GUARD", admin_tier: null, dashboard: "guard_dashboard" },
 };
 
-const TOKENS = Object.fromEntries(
+const ORIGINAL_TOKENS = Object.fromEntries(
   Object.entries(ACCOUNTS).map(([username, account]) => [
     `${username}-token`,
     { username, role: account.role, admin_tier: account.admin_tier },
   ])
 );
 
+// A plain object whose keys /__revoke can delete (to simulate the
+// backend rejecting an otherwise-still-valid session's access_token
+// — see e2e/session-expiry.spec.ts) and /__reset restores.
+const TOKENS = { ...ORIGINAL_TOKENS };
+
 let state;
 
 function resetState() {
+  for (const key of Object.keys(TOKENS)) delete TOKENS[key];
+  Object.assign(TOKENS, ORIGINAL_TOKENS);
+
   state = {
     timetable: [],
     nextTimetableId: 1,
@@ -109,6 +117,16 @@ const server = createServer(async (req, res) => {
   if (path === "/__seed" && method === "POST") {
     const body = await readBody(req);
     Object.assign(state, body);
+    reply(res, 200, { success: true });
+    return;
+  }
+
+  // Test-only: simulates the backend rejecting a token whose owning
+  // session cookie is otherwise still valid (e.g. a JWT_SECRET
+  // rotation) — see e2e/session-expiry.spec.ts.
+  if (path === "/__revoke" && method === "POST") {
+    const body = await readBody(req);
+    delete TOKENS[body.token];
     reply(res, 200, { success: true });
     return;
   }

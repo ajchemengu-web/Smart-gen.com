@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Camera } from "@/lib/api";
+import { handleUnauthorized } from "@/lib/handleUnauthorized";
 import tableStyles from "@/components/DataTable.module.css";
 import styles from "./CameraManagementClient.module.css";
 
@@ -42,6 +43,11 @@ export default function CameraManagementClient({
         { cache: "no-store" }
       );
 
+      if (response.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+
       if (!response.ok) {
         setError("Backend returned an error.");
         return;
@@ -60,6 +66,11 @@ export default function CameraManagementClient({
     async function initialLoad() {
       try {
         const response = await fetch("/api/cameras", { cache: "no-store" });
+
+        if (response.status === 401) {
+          if (!cancelled) await handleUnauthorized();
+          return;
+        }
 
         if (!response.ok) {
           if (!cancelled) setError("Backend returned an error.");

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { AccessLogEntry, PendingUnknown } from "@/lib/api";
 import AccessLogTable from "@/components/AccessLogTable";
+import { anyUnauthorized, handleUnauthorized } from "@/lib/handleUnauthorized";
 import styles from "./guard.module.css";
 
 // Caps per docs/PRD.md §6.2: a guard should never face an unbounded
@@ -31,6 +32,11 @@ export default function GuardDashboardClient() {
           fetch("/api/guard/pending", { cache: "no-store" }),
           fetch("/api/access-logs", { cache: "no-store" }),
         ]);
+
+        if (anyUnauthorized([pendingResponse, logsResponse])) {
+          if (!cancelled) await handleUnauthorized();
+          return;
+        }
 
         if (!pendingResponse.ok || !logsResponse.ok) {
           if (!cancelled) setError("Backend returned an error. Retrying…");
