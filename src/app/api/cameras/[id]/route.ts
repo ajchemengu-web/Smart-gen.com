@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, deleteCamera, updateCamera } from "@/lib/api";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 import { requireSession } from "@/lib/routeAuth";
 
 export async function PATCH(
@@ -9,12 +10,16 @@ export async function PATCH(
   const auth = await requireSession();
   if ("response" in auth) return auth.response;
 
+  const parsed = await parseJsonBody<Parameters<typeof updateCamera>[1]>(
+    request
+  );
+  if ("response" in parsed) return parsed.response;
+
   const { id } = await params;
-  const fields = await request.json();
 
   try {
     return NextResponse.json(
-      await updateCamera(id, fields, auth.session.accessToken)
+      await updateCamera(id, parsed.body, auth.session.accessToken)
     );
   } catch (error) {
     const { status, body } = apiErrorResponse(error);

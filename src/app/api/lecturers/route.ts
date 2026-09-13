@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrorResponse, createLecturer, getLecturers } from "@/lib/api";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 import { requireSession } from "@/lib/routeAuth";
 
 export async function GET(request: NextRequest) {
@@ -23,11 +24,14 @@ export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ("response" in auth) return auth.response;
 
-  const fields = await request.json();
+  const parsed = await parseJsonBody<Parameters<typeof createLecturer>[0]>(
+    request
+  );
+  if ("response" in parsed) return parsed.response;
 
   try {
     return NextResponse.json(
-      await createLecturer(fields, auth.session.accessToken)
+      await createLecturer(parsed.body, auth.session.accessToken)
     );
   } catch (error) {
     const { status, body } = apiErrorResponse(error);
