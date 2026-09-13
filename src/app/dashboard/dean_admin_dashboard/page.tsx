@@ -16,9 +16,9 @@ export default function DeanAdminDashboardPage() {
         </div>
         <p className={shell.subtitle}>
           Department-scoped view: student roster and classification,
-          units/lectures totals, and the department&apos;s timetable
-          (docs/PRD.md §8). Filter by department, or leave it blank
-          for a system-wide view.
+          units/lectures totals, the department&apos;s timetable, and
+          venue camera access (docs/PRD.md §8). Filter by department,
+          or leave it blank for a system-wide view.
         </p>
         <DeanClient />
       </div>

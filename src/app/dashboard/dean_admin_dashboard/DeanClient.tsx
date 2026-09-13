@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type {
+  Camera,
   DeanRosterEntry,
   DeanSummary,
   TimetableEntry,
@@ -15,19 +16,27 @@ export default function DeanClient() {
   const [summary, setSummary] = useState<DeanSummary | null>(null);
   const [roster, setRoster] = useState<DeanRosterEntry[]>([]);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [cameras, setCameras] = useState<Camera[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   async function load(dept: string) {
     const query = dept ? `?department=${encodeURIComponent(dept)}` : "";
 
     try {
-      const [summaryRes, rosterRes, timetableRes] = await Promise.all([
-        fetch(`/api/dean/summary${query}`, { cache: "no-store" }),
-        fetch(`/api/dean/roster${query}`, { cache: "no-store" }),
-        fetch(`/api/timetable${query}`, { cache: "no-store" }),
-      ]);
+      const [summaryRes, rosterRes, timetableRes, camerasRes] =
+        await Promise.all([
+          fetch(`/api/dean/summary${query}`, { cache: "no-store" }),
+          fetch(`/api/dean/roster${query}`, { cache: "no-store" }),
+          fetch(`/api/timetable${query}`, { cache: "no-store" }),
+          fetch(`/api/cameras${query}`, { cache: "no-store" }),
+        ]);
 
-      if (!summaryRes.ok || !rosterRes.ok || !timetableRes.ok) {
+      if (
+        !summaryRes.ok ||
+        !rosterRes.ok ||
+        !timetableRes.ok ||
+        !camerasRes.ok
+      ) {
         setError("Backend returned an error.");
         return;
       }
@@ -35,6 +44,7 @@ export default function DeanClient() {
       setSummary(await summaryRes.json());
       setRoster(await rosterRes.json());
       setTimetable(await timetableRes.json());
+      setCameras(await camerasRes.json());
       setError(null);
     } catch {
       setError("Could not reach the backend.");
@@ -46,27 +56,37 @@ export default function DeanClient() {
 
     async function initialLoad() {
       try {
-        const [summaryRes, rosterRes, timetableRes] = await Promise.all([
-          fetch("/api/dean/summary", { cache: "no-store" }),
-          fetch("/api/dean/roster", { cache: "no-store" }),
-          fetch("/api/timetable", { cache: "no-store" }),
-        ]);
+        const [summaryRes, rosterRes, timetableRes, camerasRes] =
+          await Promise.all([
+            fetch("/api/dean/summary", { cache: "no-store" }),
+            fetch("/api/dean/roster", { cache: "no-store" }),
+            fetch("/api/timetable", { cache: "no-store" }),
+            fetch("/api/cameras", { cache: "no-store" }),
+          ]);
 
-        if (!summaryRes.ok || !rosterRes.ok || !timetableRes.ok) {
+        if (
+          !summaryRes.ok ||
+          !rosterRes.ok ||
+          !timetableRes.ok ||
+          !camerasRes.ok
+        ) {
           if (!cancelled) setError("Backend returned an error.");
           return;
         }
 
-        const [summaryData, rosterData, timetableData] = await Promise.all([
-          summaryRes.json(),
-          rosterRes.json(),
-          timetableRes.json(),
-        ]);
+        const [summaryData, rosterData, timetableData, camerasData] =
+          await Promise.all([
+            summaryRes.json(),
+            rosterRes.json(),
+            timetableRes.json(),
+            camerasRes.json(),
+          ]);
 
         if (!cancelled) {
           setSummary(summaryData);
           setRoster(rosterData);
           setTimetable(timetableData);
+          setCameras(camerasData);
           setError(null);
         }
       } catch {
@@ -251,11 +271,41 @@ export default function DeanClient() {
         )}
       </section>
 
+      <section className={styles.section}>
+        <h2>Venue cameras</h2>
+        {cameras.length === 0 ? (
+          <p className={tableStyles.empty}>No cameras registered yet.</p>
+        ) : (
+          <table className={tableStyles.table}>
+            <thead>
+              <tr>
+                <th>Camera ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cameras.map((camera) => (
+                <tr key={camera.camera_id}>
+                  <td>{camera.camera_id}</td>
+                  <td>{camera.name}</td>
+                  <td>{camera.camera_type}</td>
+                  <td>{camera.location ?? "—"}</td>
+                  <td>{camera.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
       <p className={styles.scope}>
-        Class logs (per-lecture attendance) and venue camera access are
-        part of this dashboard&apos;s scope per docs/PRD.md §8, but need
-        the SmartAttendance classroom-camera pipeline and camera
-        management, neither of which exist yet — not shown here.
+        Class logs (per-lecture attendance) are part of this
+        dashboard&apos;s scope per docs/PRD.md §8, but need the
+        SmartAttendance classroom-camera pipeline, which doesn&apos;t
+        exist yet — not shown here.
       </p>
     </div>
   );

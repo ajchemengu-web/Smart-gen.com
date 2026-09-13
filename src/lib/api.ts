@@ -267,6 +267,107 @@ export function deleteTimetableEntry(entryId: number, token: string) {
 }
 
 // ============================================================
+// CAMERA MANAGEMENT (docs/PRD.md §8)
+// ============================================================
+//
+// A persisted camera registry, not a live video feed — see
+// camera_service.py's docstring in Alternative_Identifier for why.
+// Original Admin: full control. Security Admin: view + configure/
+// status, no create or delete (backend enforces this — see
+// src/api/main.py's require_admin_tier calls on each endpoint).
+// Dean of School: view only, department-filtered ("venue camera
+// access").
+
+export type Camera = {
+  camera_id: string;
+  name: string;
+  camera_type: string;
+  location: string | null;
+  department: string | null;
+  source: string | null;
+  status: string;
+  enabled: boolean;
+  created_by: string | null;
+  created_at: string;
+};
+
+export function getCameras(
+  token: string,
+  filters?: { camera_type?: string; department?: string; status?: string }
+) {
+  const params = new URLSearchParams();
+  if (filters?.camera_type) params.set("camera_type", filters.camera_type);
+  if (filters?.department) params.set("department", filters.department);
+  if (filters?.status) params.set("status", filters.status);
+  const query = params.toString();
+
+  return request<Camera[]>(
+    `/cameras${query ? `?${query}` : ""}`,
+    undefined,
+    token
+  );
+}
+
+export function createCamera(
+  fields: {
+    camera_id: string;
+    name: string;
+    camera_type: string;
+    location?: string;
+    department?: string;
+    source?: string;
+  },
+  token: string
+) {
+  return postJson<Camera>("/cameras", fields, token);
+}
+
+export function updateCamera(
+  cameraId: string,
+  fields: {
+    name?: string;
+    location?: string;
+    source?: string;
+    enabled?: boolean;
+  },
+  token: string
+) {
+  return request(
+    `/cameras/${encodeURIComponent(cameraId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    },
+    token
+  );
+}
+
+export function updateCameraStatus(
+  cameraId: string,
+  status: string,
+  token: string
+) {
+  return request(
+    `/cameras/${encodeURIComponent(cameraId)}/status`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+    token
+  );
+}
+
+export function deleteCamera(cameraId: string, token: string) {
+  return request(
+    `/cameras/${encodeURIComponent(cameraId)}`,
+    { method: "DELETE" },
+    token
+  );
+}
+
+// ============================================================
 // DEAN OF SCHOOL ADMIN (docs/PRD.md §8)
 // ============================================================
 //

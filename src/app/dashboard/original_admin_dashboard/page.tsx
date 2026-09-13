@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminOverviewClient from "@/components/AdminOverviewClient";
+import CameraManagementClient from "@/components/CameraManagementClient";
 import LogoutButton from "@/components/LogoutButton";
 import shell from "@/components/DashboardShell.module.css";
 
@@ -21,12 +22,14 @@ export default function OriginalAdminDashboardPage() {
           </div>
         </div>
         <p className={shell.subtitle}>
-          System-wide overview across SmartAccess. Full admin management
-          and camera management control (docs/PRD.md §8) are not built
-          yet — this shows the same live data the backend currently
-          exposes: enrolled students, guests, and the access log.
+          System-wide overview across SmartAccess: enrolled students,
+          guests, and the access log, plus full camera management
+          control (docs/PRD.md §8) — provision, configure, and remove
+          any checkpoint or classroom camera.
         </p>
         <AdminOverviewClient />
+        <h2>Camera management</h2>
+        <CameraManagementClient canCreate canDelete />
       </div>
     </main>
   );

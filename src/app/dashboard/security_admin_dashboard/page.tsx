@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminOverviewClient from "@/components/AdminOverviewClient";
+import CameraManagementClient from "@/components/CameraManagementClient";
 import LogoutButton from "@/components/LogoutButton";
 import shell from "@/components/DashboardShell.module.css";
 
@@ -21,12 +22,14 @@ export default function SecurityAdminDashboardPage() {
           </div>
         </div>
         <p className={shell.subtitle}>
-          Oversight for SmartAccess. Camera status and configuration
-          (docs/PRD.md §8) are not built yet — this shows the same live
-          data the backend currently exposes: enrolled students, guests,
-          and the access log.
+          Oversight for SmartAccess: enrolled students, guests, and the
+          access log, plus camera status and configuration within
+          SmartAccess (docs/PRD.md §8) — provisioning and removing a
+          camera stays with the Original Admin.
         </p>
         <AdminOverviewClient />
+        <h2>Camera management</h2>
+        <CameraManagementClient canCreate={false} canDelete={false} />
       </div>
     </main>
   );
