@@ -13,6 +13,10 @@ test.beforeEach(async ({ page }) => {
 test("full timetable entry lifecycle: create, filter, postpone, reactivate, cancel, delete", async ({ page }) => {
   await expect(page.getByText("No timetable entries yet.")).toBeVisible();
 
+  // Department -> Course -> Year is the required order (docs/PRD.md
+  // §6, §8): that triple is what routes this entry to the right
+  // students' own schedules in SmartAttendance.
+  await page.fill('input[name="department"]', "School of Computing");
   await page.fill('input[name="course"]', "BSc CS");
   await page.fill('input[name="year"]', "2");
   await page.selectOption('select[name="day_of_week"]', "TUESDAY");
@@ -25,7 +29,21 @@ test("full timetable entry lifecycle: create, filter, postpone, reactivate, canc
   await page.waitForSelector("text=Data Structures", { timeout: 10000 });
 
   const row = page.locator("tr", { hasText: "Data Structures" });
+  await expect(row.locator("td", { hasText: "School of Computing" })).toBeVisible();
   await expect(row.locator("td", { hasText: /^ON$/ })).toBeVisible();
+
+  // Filter by matching department keeps it visible; non-matching hides it.
+  await page.fill('input[placeholder="Filter by department"]', "School of Computing");
+  await page.locator("button", { hasText: "Apply filters" }).click();
+  await expect(page.getByText("Data Structures")).toBeVisible();
+
+  await page.fill('input[placeholder="Filter by department"]', "School of Business");
+  await page.locator("button", { hasText: "Apply filters" }).click();
+  await expect(page.getByText("No timetable entries yet.")).toBeVisible();
+
+  await page.fill('input[placeholder="Filter by department"]', "");
+  await page.locator("button", { hasText: "Apply filters" }).click();
+  await page.waitForSelector("text=Data Structures", { timeout: 10000 });
 
   // Filter by matching course keeps it visible; non-matching hides it.
   await page.fill('input[placeholder="Filter by course"]', "BSc CS");

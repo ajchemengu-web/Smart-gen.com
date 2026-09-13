@@ -19,6 +19,12 @@
   margin: 0 0 0.9rem;
 }
 
+.helpText {
+  color: #9aa2b1;
+  font-size: 0.8rem;
+  margin: -0.4rem 0 0.9rem;
+}
+
 .form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));

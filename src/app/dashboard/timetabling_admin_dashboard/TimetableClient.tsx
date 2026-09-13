@@ -27,11 +27,13 @@ export default function TimetableClient() {
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
 
+  const [departmentFilter, setDepartmentFilter] = useState("");
   const [courseFilter, setCourseFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
 
   async function load() {
     const params = new URLSearchParams();
+    if (departmentFilter) params.set("department", departmentFilter);
     if (courseFilter) params.set("course", courseFilter);
     if (yearFilter) params.set("year", yearFilter);
     const query = params.toString();
@@ -90,6 +92,7 @@ export default function TimetableClient() {
     setSubmitting(true);
 
     const fields = {
+      department: String(formData.get("department") ?? ""),
       course: String(formData.get("course") ?? ""),
       year: Number(formData.get("year")),
       day_of_week: String(formData.get("day_of_week") ?? ""),
@@ -152,7 +155,17 @@ export default function TimetableClient() {
 
       <section className={styles.section}>
         <h2>Add a timetable entry</h2>
+        <p className={styles.helpText}>
+          Set Department, then Course, then Year first — that
+          department/course/year combination is what routes this
+          entry to the right students&apos; own schedules in
+          SmartAttendance (docs/PRD.md §6).
+        </p>
         <form action={handleCreate} className={styles.form}>
+          <label className={styles.field}>
+            <span>Department</span>
+            <input name="department" required />
+          </label>
           <label className={styles.field}>
             <span>Course</span>
             <input name="course" required />
@@ -208,6 +221,11 @@ export default function TimetableClient() {
 
         <div className={styles.filters}>
           <input
+            placeholder="Filter by department"
+            value={departmentFilter}
+            onChange={(event) => setDepartmentFilter(event.target.value)}
+          />
+          <input
             placeholder="Filter by course"
             value={courseFilter}
             onChange={(event) => setCourseFilter(event.target.value)}
@@ -233,6 +251,7 @@ export default function TimetableClient() {
           <table className={tableStyles.table}>
             <thead>
               <tr>
+                <th>Department</th>
                 <th>Course</th>
                 <th>Yr</th>
                 <th>Day</th>
@@ -247,6 +266,7 @@ export default function TimetableClient() {
             <tbody>
               {entries.map((entry) => (
                 <tr key={entry.id}>
+                  <td>{entry.department ?? "—"}</td>
                   <td>{entry.course}</td>
                   <td>{entry.year}</td>
                   <td>{entry.day_of_week}</td>
