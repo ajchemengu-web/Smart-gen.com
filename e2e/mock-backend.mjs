@@ -102,6 +102,17 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // Test-only fixture-loading hook — merges arbitrary arrays into
+  // state (e.g. { students: [...], cameras: [...] }) so a spec can
+  // set up data the mock has no real "create" flow for (like
+  // students, who are normally created via facial enrollment).
+  if (path === "/__seed" && method === "POST") {
+    const body = await readBody(req);
+    Object.assign(state, body);
+    reply(res, 200, { success: true });
+    return;
+  }
+
   if (path === "/login" && method === "POST") {
     const body = await readBody(req);
     const account = ACCOUNTS[body.username];
@@ -227,7 +238,12 @@ const server = createServer(async (req, res) => {
 
   if (path === "/cameras" && method === "GET") {
     if (!auth(req, res, ["ADMIN"])) return;
-    reply(res, 200, state.cameras);
+    const cameraType = url.searchParams.get("camera_type");
+    const department = url.searchParams.get("department");
+    let results = state.cameras;
+    if (cameraType) results = results.filter((c) => c.camera_type === cameraType);
+    if (department) results = results.filter((c) => c.department === department);
+    reply(res, 200, results);
     return;
   }
 
@@ -310,19 +326,41 @@ const server = createServer(async (req, res) => {
 
   if (path === "/dean/roster" && method === "GET") {
     if (!auth(req, res, ["ADMIN"])) return;
-    reply(res, 200, state.students);
+    const department = url.searchParams.get("department");
+    const roster = department
+      ? state.students.filter((s) => s.department === department)
+      : state.students;
+    reply(res, 200, roster);
     return;
   }
 
   if (path === "/dean/summary" && method === "GET") {
     if (!auth(req, res, ["ADMIN"])) return;
+    const department = url.searchParams.get("department");
+    const roster = department
+      ? state.students.filter((s) => s.department === department)
+      : state.students;
+    const timetable = department
+      ? state.timetable.filter((e) => e.department === department)
+      : state.timetable;
+
+    const counts = {};
+    for (const s of roster) {
+      const key = `${s.course}::${s.year}`;
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    const roster_by_classification = Object.entries(counts).map(([key, count]) => {
+      const [course, year] = key.split("::");
+      return { course, year: Number(year), student_count: count };
+    });
+
     reply(res, 200, {
-      department: url.searchParams.get("department"),
-      total_students: state.students.length,
-      roster_by_classification: [],
-      total_units: 0,
-      total_active_lectures: 0,
-      total_timetable_entries: 0,
+      department,
+      total_students: roster.length,
+      roster_by_classification,
+      total_units: new Set(timetable.map((e) => e.unit_name)).size,
+      total_active_lectures: timetable.filter((e) => e.status === "ON").length,
+      total_timetable_entries: timetable.length,
     });
     return;
   }
