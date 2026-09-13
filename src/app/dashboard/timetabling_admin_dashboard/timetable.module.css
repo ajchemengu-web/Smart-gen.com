@@ -1,0 +1,125 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.banner {
+  background: rgba(228, 179, 74, 0.12);
+  border: 1px solid rgba(228, 179, 74, 0.35);
+  color: #e4b34a;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.section h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.9rem;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.8rem;
+  background: #14171d;
+  border: 1px solid #262a33;
+  border-radius: 0.6rem;
+  padding: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #c7cbd4;
+}
+
+.field input,
+.field select {
+  background: #0b0d12;
+  border: 1px solid #2c313b;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  color: #e7e9ee;
+  font-size: 0.9rem;
+}
+
+.submitRow {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit {
+  background: #4f7cff;
+  color: white;
+  border: none;
+  border-radius: 0.4rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.filters {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filters input {
+  background: #14171d;
+  border: 1px solid #262a33;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  color: #e7e9ee;
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  border: 1px solid #2c313b;
+  background: transparent;
+  color: #9aa2b1;
+  border-radius: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  color: #e7e9ee;
+  border-color: #4f7cff;
+}
+
+.deleteButton {
+  composes: actionButton;
+  border-color: rgba(217, 83, 79, 0.4);
+  color: #d9534f;
+}
+
+.statusOn {
+  color: #7fd3a3;
+}
+
+.statusPostponed {
+  color: #e4b34a;
+}
+
+.statusCancelled {
+  color: #d9534f;
+}

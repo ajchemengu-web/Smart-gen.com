@@ -23,11 +23,13 @@ you so rather than showing a dashboard.
   signed-in admin's access_token, since the backend's own POST
   /enroll now requires one too.
 - `/dashboard/guard_dashboard`, `/dashboard/original_admin_dashboard`,
-  `/dashboard/security_admin_dashboard` — real, working dashboards
+  `/dashboard/security_admin_dashboard`,
+  `/dashboard/timetabling_admin_dashboard` — real, working dashboards
   backed by the live backend (guard admit/reject queue + access log;
-  student/guest/access-log overview). Every other dashboard slug
-  (Timetabling, Dean, Enrollment/Temporary Admin) is still a
-  placeholder via `/dashboard/[slug]` — real content per
+  student/guest/access-log overview; create/postpone/cancel/delete
+  timetable entries filtered by course and year, per `docs/PRD.md`
+  §8). Every other dashboard slug (Dean, Enrollment/Temporary Admin)
+  is still a placeholder via `/dashboard/[slug]` — real content per
   `docs/PRD.md` §8 needs backend features that don't exist yet.
 - `src/proxy.ts` protects every `/dashboard/*` route and `/enroll`:
   no session -> redirected to `/login`; logged in but the URL

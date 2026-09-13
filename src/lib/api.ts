@@ -189,6 +189,81 @@ export function getGuests(token: string) {
 }
 
 // ============================================================
+// TIMETABLING (docs/PRD.md §8)
+// ============================================================
+
+export type TimetableEntry = {
+  id: number;
+  course: string;
+  year: number;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  unit_name: string;
+  facilitator: string;
+  venue: string;
+  status: string;
+  created_by: string | null;
+  created_at: string;
+};
+
+export function getTimetable(
+  token: string,
+  filters?: { course?: string; year?: number }
+) {
+  const params = new URLSearchParams();
+  if (filters?.course) params.set("course", filters.course);
+  if (filters?.year != null) params.set("year", String(filters.year));
+  const query = params.toString();
+
+  return request<TimetableEntry[]>(
+    `/timetable${query ? `?${query}` : ""}`,
+    undefined,
+    token
+  );
+}
+
+export function createTimetableEntry(
+  fields: {
+    course: string;
+    year: number;
+    day_of_week: string;
+    start_time: string;
+    end_time: string;
+    unit_name: string;
+    facilitator: string;
+    venue: string;
+  },
+  token: string
+) {
+  return postJson<TimetableEntry>("/timetable", fields, token);
+}
+
+export function updateTimetableEntryStatus(
+  entryId: number,
+  status: string,
+  token: string
+) {
+  return request(
+    `/timetable/${entryId}/status`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+    token
+  );
+}
+
+export function deleteTimetableEntry(entryId: number, token: string) {
+  return request(
+    `/timetable/${entryId}`,
+    { method: "DELETE" },
+    token
+  );
+}
+
+// ============================================================
 // ROUTE HANDLER HELPER
 // ============================================================
 //

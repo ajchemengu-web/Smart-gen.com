@@ -11,11 +11,10 @@ const DASHBOARDS: Record<
   // and .../security_admin_dashboard/, which Next.js resolves in
   // preference to this dynamic [slug] route for those exact paths —
   // intentionally not listed here.
-  timetabling_admin_dashboard: {
-    title: "Directorate of Timetabling",
-    description:
-      "Create, update, and cancel timetables per course and year.",
-  },
+  // timetabling_admin_dashboard has a real implementation at
+  // src/app/dashboard/timetabling_admin_dashboard/page.tsx, which
+  // Next.js resolves in preference to this dynamic [slug] route for
+  // that exact path — intentionally not listed here.
   dean_admin_dashboard: {
     title: "Dean of School",
     description:
