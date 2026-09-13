@@ -32,12 +32,16 @@ you so rather than showing a dashboard.
   timetable entries filtered by course and year; a Dean's
   department-scoped student roster, classification counts, unit/
   timetable totals, department timetable, and venue cameras; camera
-  management; a Temporary Admin's enrollment-only form — per
-  `docs/PRD.md` §8). The Original Admin has full camera control
-  (provision/configure/remove); the Security Admin can configure/
-  change status but not provision or remove one; the Dean gets a
-  read-only, department-filtered camera view
-  (`src/components/CameraManagementClient.tsx`). The Dean
+  management; lecturer profile registration; a Temporary Admin's
+  enrollment-only form — per `docs/PRD.md` §8). The Original Admin
+  has full camera control (provision/configure/remove) and manages
+  lecturer profiles (`src/components/LecturerManagementClient.tsx`
+  — register a lecturer's name/department here first, then use
+  their Lecturer ID as the enrollment form's "linked person ID" so
+  SmartAttendance can resolve them to their own units); the Security
+  Admin can configure/change camera status but not provision or
+  remove one; the Dean gets a read-only, department-filtered camera
+  view (`src/components/CameraManagementClient.tsx`). The Dean
   dashboard's "class logs" stays out of scope until the
   SmartAttendance classroom-camera pipeline exists. Every dashboard
   slug `auth_service.resolve_dashboard()` can hand back now has a

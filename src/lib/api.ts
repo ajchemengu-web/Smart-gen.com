@@ -415,6 +415,36 @@ export function getDeanSummary(token: string, department?: string) {
 }
 
 // ============================================================
+// LECTURER PROFILES (docs/PRD.md §5, §6)
+// ============================================================
+//
+// Register a lecturer's profile (full_name/department, no facial
+// embedding — see Alternative_Identifier's lecturer_service.py)
+// before enrolling their LECTURER login via enroll() above,
+// referencing this lecturer_id as linked_person_id. Lets
+// SmartAttendance resolve a logged-in lecturer to their own units.
+
+export type Lecturer = {
+  lecturer_id: string;
+  full_name: string;
+  department: string | null;
+};
+
+export function getLecturers(token: string, department?: string) {
+  const query = department
+    ? `?department=${encodeURIComponent(department)}`
+    : "";
+  return request<Lecturer[]>(`/lecturers${query}`, undefined, token);
+}
+
+export function createLecturer(
+  fields: { lecturer_id: string; full_name: string; department?: string },
+  token: string
+) {
+  return postJson<Lecturer>("/lecturers", fields, token);
+}
+
+// ============================================================
 // ROUTE HANDLER HELPER
 // ============================================================
 //
