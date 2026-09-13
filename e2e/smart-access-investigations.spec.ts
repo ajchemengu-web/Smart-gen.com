@@ -91,3 +91,44 @@ test("register a target, track its status, then open and work a linked case", as
   await page.waitForTimeout(500);
   await expect(caseBadge()).toHaveText("OPEN");
 });
+
+test("registering a target by admission number derives their name and links the student record", async ({ page }) => {
+  await fetch("http://localhost:8000/__seed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      students: [
+        {
+          student_id: "S1",
+          full_name: "Alice Wanjiru",
+          admission_number: "AD001",
+          department: "School of Computing",
+          course: "BSc Computer Science",
+          year: 2,
+        },
+      ],
+    }),
+  });
+  await page.reload();
+  await page.waitForSelector("text=No targets registered yet.", { timeout: 10000 });
+
+  // No full_name typed at all — only the admission number.
+  await page.fill('input[name="admission_number"]', "AD001");
+  await page.fill('input[name="reason"]', "Under investigation");
+  await page.locator("button", { hasText: "Register target" }).click();
+  await page.waitForSelector("text=Alice Wanjiru", { timeout: 10000 });
+
+  await expect(
+    page.locator("p", { hasText: "tracked by face (enrolled student S1)" })
+  ).toBeVisible();
+
+  // An unknown admission number is rejected with the backend's own
+  // error message, not silently registered as a nameless target.
+  await page.fill('input[name="admission_number"]', "AD999");
+  await page.locator("button", { hasText: "Register target" }).click();
+  await expect(
+    page.getByText("No enrolled student found with admission_number", {
+      exact: false,
+    })
+  ).toBeVisible();
+});

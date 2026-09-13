@@ -595,11 +595,13 @@ export function getAnalyticsSummary(token: string, sinceDays?: number) {
 // A dashboard surface dedicated to SmartAccess itself (Security/
 // Original Admin). A target with a stored embedding is checked by
 // the live recognition pipeline ahead of students/guests — see
-// Alternative_Identifier's watchlist_service.py. Photo-based
-// enrollment (POST /watchlist's optional `images`) has no web
-// upload UI yet, same gap as student facial enrollment — this
-// dashboard creates a named/described record; wiring a photo
-// through to a stored embedding is a follow-up.
+// Alternative_Identifier's watchlist_service.py. Two ways to give a
+// target that embedding: an admission_number (if the person is
+// already enrolled as a student, this reuses their own stored
+// embedding — no photo needed, and this is the path the dashboard's
+// form actually offers), or a fresh photo (POST /watchlist's
+// optional `images`, which has no web upload UI yet — same gap as
+// student facial enrollment).
 
 export type WatchlistTarget = {
   target_id: string;
@@ -608,6 +610,7 @@ export type WatchlistTarget = {
   reason: string | null;
   status: string;
   embedding_file: string | null;
+  linked_student_id: string | null;
   created_by: string | null;
   created_at: string;
   resolved_by: string | null;
@@ -631,7 +634,12 @@ export function getWatchlist(token: string, status?: string) {
 }
 
 export function createWatchlistTarget(
-  fields: { full_name: string; description?: string; reason?: string },
+  fields: {
+    full_name?: string;
+    description?: string;
+    reason?: string;
+    admission_number?: string;
+  },
   token: string
 ) {
   return postForm<WatchlistTarget>("/watchlist", fields, token);

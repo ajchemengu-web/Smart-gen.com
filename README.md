@@ -58,12 +58,14 @@ you so rather than showing a dashboard.
   (or Original Admin) also has a dedicated SmartAccess dashboard at
   `/dashboard/security_admin_dashboard/investigations`
   (`SmartAccessClient.tsx`, docs/PRD.md §6.3a): a **watchlist**
-  (register a person of interest; once it has a reference photo on
-  the backend, every live sighting at a checkpoint is logged
-  automatically — a target flag overrides normal admission, even for
-  an otherwise-legitimate member) and **investigations** (lightweight
-  case files, optionally linked to one target, with an append-only
-  note timeline). Both the Guard and
+  (register a person of interest — by admission number if they're
+  already an enrolled student, which reuses their own stored photo
+  and derives their name automatically, or by name if not; once the
+  target has an embedding, every live sighting at a checkpoint is
+  logged automatically — a target flag overrides normal admission,
+  even for an otherwise-legitimate member) and **investigations**
+  (lightweight case files, optionally linked to one target, with an
+  append-only note timeline). Both the Guard and
   Admin dashboards' access log
   (`src/components/AccessLogTable.tsx`) let a Guard or Admin flag a
   VERIFIED entry as a false positive after determining, outside this

@@ -41,7 +41,17 @@ export default function SmartAccessClient() {
   const [noteDraft, setNoteDraft] = useState("");
   const [addingNote, setAddingNote] = useState(false);
 
-  async function loadWatchlist(status = targetStatusFilter) {
+  // `silent` skips touching targetError/caseError entirely — used
+  // when refreshing the list after a create/resolve/close/etc.
+  // action that already set its own success (cleared) or failure
+  // (set) message. Without this, this refresh's own success would
+  // race that message and clobber it back to null before it ever
+  // rendered (both calls fire from the same finally block, and the
+  // list GET normally resolves first).
+  async function loadWatchlist(
+    status = targetStatusFilter,
+    { silent = false } = {}
+  ) {
     const query = status ? `?status=${status}` : "";
 
     try {
@@ -55,18 +65,21 @@ export default function SmartAccessClient() {
       }
 
       if (!response.ok) {
-        setTargetError("Backend returned an error.");
+        if (!silent) setTargetError("Backend returned an error.");
         return;
       }
 
       setTargets(await response.json());
-      setTargetError(null);
+      if (!silent) setTargetError(null);
     } catch {
-      setTargetError("Could not reach the backend.");
+      if (!silent) setTargetError("Could not reach the backend.");
     }
   }
 
-  async function loadInvestigations(status = caseStatusFilter) {
+  async function loadInvestigations(
+    status = caseStatusFilter,
+    { silent = false } = {}
+  ) {
     const query = status ? `?status=${status}` : "";
 
     try {
@@ -80,14 +93,14 @@ export default function SmartAccessClient() {
       }
 
       if (!response.ok) {
-        setCaseError("Backend returned an error.");
+        if (!silent) setCaseError("Backend returned an error.");
         return;
       }
 
       setCases(await response.json());
-      setCaseError(null);
+      if (!silent) setCaseError(null);
     } catch {
-      setCaseError("Could not reach the backend.");
+      if (!silent) setCaseError("Could not reach the backend.");
     }
   }
 
@@ -104,6 +117,7 @@ export default function SmartAccessClient() {
       full_name: String(formData.get("full_name") ?? ""),
       description: String(formData.get("description") ?? ""),
       reason: String(formData.get("reason") ?? ""),
+      admission_number: String(formData.get("admission_number") ?? ""),
     };
 
     try {
@@ -122,7 +136,7 @@ export default function SmartAccessClient() {
       setTargetError(null);
     } finally {
       setCreatingTarget(false);
-      loadWatchlist();
+      loadWatchlist(undefined, { silent: true });
     }
   }
 
@@ -137,7 +151,7 @@ export default function SmartAccessClient() {
       });
     } finally {
       setBusyTargetId(null);
-      loadWatchlist();
+      loadWatchlist(undefined, { silent: true });
     }
   }
 
@@ -194,7 +208,7 @@ export default function SmartAccessClient() {
       setCaseError(null);
     } finally {
       setCreatingCase(false);
-      loadInvestigations();
+      loadInvestigations(undefined, { silent: true });
     }
   }
 
@@ -262,7 +276,7 @@ export default function SmartAccessClient() {
       }
     } finally {
       setBusyCaseId(null);
-      loadInvestigations();
+      loadInvestigations(undefined, { silent: true });
     }
   }
 
@@ -273,15 +287,22 @@ export default function SmartAccessClient() {
         {targetError && <p className={styles.banner}>{targetError}</p>}
         <p className={styles.helpText}>
           A registered target is checked by the recognition pipeline ahead
-          of students/guests once it has a reference photo (added via the
-          API for now) — every live sighting is logged automatically, with
-          no repeat-visit cooldown, unlike a normal student/guest match.
+          of students/guests once it has a reference photo — every live
+          sighting is then logged automatically, with no repeat-visit
+          cooldown, unlike a normal student/guest match. If this person is
+          already enrolled as a student, enter their admission number
+          instead of a name below — their own photo on file is reused, so
+          no fresh photo is needed and the target is trackable right away.
         </p>
 
         <form action={handleCreateTarget} className={styles.form}>
           <label className={styles.field}>
-            <span>Full name</span>
-            <input name="full_name" required />
+            <span>Admission number (if already enrolled)</span>
+            <input name="admission_number" placeholder="ADM-1234" />
+          </label>
+          <label className={styles.field}>
+            <span>Full name (if not already enrolled)</span>
+            <input name="full_name" />
           </label>
           <label className={styles.field}>
             <span>Description</span>
@@ -327,9 +348,11 @@ export default function SmartAccessClient() {
                 {target.target_id}
                 {target.description ? ` · ${target.description}` : ""}
                 {target.reason ? ` · ${target.reason}` : ""}
-                {target.embedding_file
-                  ? " · tracked by face"
-                  : " · no reference photo yet"}
+                {target.linked_student_id
+                  ? ` · tracked by face (enrolled student ${target.linked_student_id})`
+                  : target.embedding_file
+                    ? " · tracked by face"
+                    : " · no reference photo yet"}
               </p>
               <div className={styles.actions}>
                 <button

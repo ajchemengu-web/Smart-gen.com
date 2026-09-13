@@ -565,13 +565,39 @@ const server = createServer(async (req, res) => {
     const user = authSmartAccess(req, res);
     if (!user) return;
     const fields = await readMultipartFields(req);
+
+    let fullName = fields.full_name || null;
+    let linkedStudentId = null;
+    let embeddingFile = null;
+
+    if (fields.admission_number) {
+      const student = state.students.find(
+        (s) => s.admission_number === fields.admission_number
+      );
+      if (!student) {
+        return reply(res, 400, {
+          detail: `No enrolled student found with admission_number: ${fields.admission_number}`,
+        });
+      }
+      fullName = student.full_name;
+      linkedStudentId = student.student_id;
+      embeddingFile = `${student.student_id}.npy`;
+    }
+
+    if (!fullName) {
+      return reply(res, 400, {
+        detail: "Either full_name or admission_number is required.",
+      });
+    }
+
     const target = {
       target_id: `TGT-${String(state.nextWatchlistSeq++).padStart(4, "0")}`,
-      full_name: fields.full_name,
+      full_name: fullName,
       description: fields.description || null,
       reason: fields.reason || null,
       status: "ACTIVE",
-      embedding_file: null,
+      embedding_file: embeddingFile,
+      linked_student_id: linkedStudentId,
       created_by: user.username,
       created_at: "2026-09-13T00:00:00",
       resolved_by: null,
