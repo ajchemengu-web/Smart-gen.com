@@ -40,7 +40,10 @@ you so rather than showing a dashboard.
   management; lecturer profile registration; access analytics +
   false-positive flagging; a Temporary Admin's enrollment-only form
   — per `docs/PRD.md` §8, §13). The Original Admin has full camera
-  control (provision/configure/remove), manages lecturer profiles
+  control (provision/configure/remove) — adding a camera requires
+  picking which product it serves (Smart Access/checkpoint or Smart
+  Attendance/classroom), its specific location, and its IP
+  address/stream URL — manages lecturer profiles
   (`src/components/LecturerManagementClient.tsx` — register a
   lecturer's name/department here first, then use their Lecturer ID
   as the enrollment form's "linked person ID" so SmartAttendance can

@@ -6,7 +6,22 @@ import { handleUnauthorized } from "@/lib/handleUnauthorized";
 import tableStyles from "@/components/DataTable.module.css";
 import styles from "./CameraManagementClient.module.css";
 
-const CAMERA_TYPES = ["CHECKPOINT", "CLASSROOM"];
+// camera_type picks which Smart Gen product a camera serves —
+// CHECKPOINT cameras are SmartAccess (a gate/checkpoint), CLASSROOM
+// cameras are SmartAttendance (see Alternative_Identifier's
+// camera_service.py). Labeled by product here so an admin adding a
+// camera isn't left guessing what the raw enum values mean.
+const CAMERA_TYPES: { value: string; label: string }[] = [
+  { value: "CHECKPOINT", label: "Smart Access (checkpoint/gate)" },
+  { value: "CLASSROOM", label: "Smart Attendance (classroom)" },
+];
+
+function cameraTypeLabel(cameraType: string) {
+  return (
+    CAMERA_TYPES.find((type) => type.value === cameraType)?.label ??
+    cameraType
+  );
+}
 
 function statusClass(status: string) {
   if (status === "ONLINE") return styles.statusOnline;
@@ -187,26 +202,30 @@ export default function CameraManagementClient({
               <input name="name" required />
             </label>
             <label className={styles.field}>
-              <span>Type</span>
+              <span>Serves</span>
               <select name="camera_type" defaultValue="CHECKPOINT">
                 {CAMERA_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                  <option key={type.value} value={type.value}>
+                    {type.label}
                   </option>
                 ))}
               </select>
             </label>
             <label className={styles.field}>
               <span>Location</span>
-              <input name="location" />
+              <input name="location" placeholder="Main Gate (North Entrance)" required />
             </label>
             <label className={styles.field}>
               <span>Department (classroom cameras)</span>
               <input name="department" />
             </label>
             <label className={styles.field}>
-              <span>Source (RTSP URL / webcam index)</span>
-              <input name="source" />
+              <span>IP address / stream URL</span>
+              <input
+                name="source"
+                placeholder="rtsp://192.168.1.50:554/stream"
+                required
+              />
             </label>
             <div className={styles.submitRow}>
               <button
@@ -231,8 +250,8 @@ export default function CameraManagementClient({
           >
             <option value="">All types</option>
             {CAMERA_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
+              <option key={type.value} value={type.value}>
+                {type.label}
               </option>
             ))}
           </select>
@@ -249,8 +268,9 @@ export default function CameraManagementClient({
               <tr>
                 <th>Camera ID</th>
                 <th>Name</th>
-                <th>Type</th>
+                <th>Serves</th>
                 <th>Location</th>
+                <th>IP / Stream</th>
                 <th>Department</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -261,8 +281,9 @@ export default function CameraManagementClient({
                 <tr key={camera.camera_id}>
                   <td>{camera.camera_id}</td>
                   <td>{camera.name}</td>
-                  <td>{camera.camera_type}</td>
+                  <td>{cameraTypeLabel(camera.camera_type)}</td>
                   <td>{camera.location ?? "—"}</td>
+                  <td>{camera.source ?? "—"}</td>
                   <td>{camera.department ?? "—"}</td>
                   <td className={statusClass(camera.status)}>
                     {camera.status}

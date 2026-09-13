@@ -16,12 +16,16 @@ test("Original Admin has full camera control: create, change status, disable/ena
   await page.fill('input[name="camera_id"]', "CAM-GATE-1");
   await page.fill('input[name="name"]', "Main Gate");
   await page.selectOption('select[name="camera_type"]', "CHECKPOINT");
-  await page.fill('input[name="location"]', "Main Gate");
+  await page.fill('input[name="location"]', "Main Gate (North Entrance)");
+  await page.fill('input[name="source"]', "rtsp://192.168.1.50:554/stream");
   await page.locator("button", { hasText: "Add camera" }).click();
   await page.waitForSelector("text=CAM-GATE-1", { timeout: 10000 });
 
   let row = page.locator("tr", { hasText: "CAM-GATE-1" });
   await expect(row.locator("td", { hasText: /^OFFLINE/ })).toBeVisible();
+  await expect(row.locator("td", { hasText: "Smart Access" })).toBeVisible();
+  await expect(row.locator("td", { hasText: "Main Gate (North Entrance)" })).toBeVisible();
+  await expect(row.locator("td", { hasText: "rtsp://192.168.1.50:554/stream" })).toBeVisible();
 
   await row.locator("button", { hasText: "Mark online" }).click();
   await page.waitForTimeout(500);

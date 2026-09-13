@@ -417,9 +417,9 @@ export function createCamera(
     camera_id: string;
     name: string;
     camera_type: string;
-    location?: string;
+    location: string;
+    source: string;
     department?: string;
-    source?: string;
   },
   token: string
 ) {
