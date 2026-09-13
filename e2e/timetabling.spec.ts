@@ -13,12 +13,15 @@ test.beforeEach(async ({ page }) => {
 test("full timetable entry lifecycle: create, filter, postpone, reactivate, cancel, delete", async ({ page }) => {
   await expect(page.getByText("No timetable entries yet.")).toBeVisible();
 
-  // Department -> Course -> Year is the required order (docs/PRD.md
-  // §6, §8): that triple is what routes this entry to the right
-  // students' own schedules in SmartAttendance.
+  // Department -> Course -> Year -> Semester is the required order
+  // (docs/PRD.md §6, §8): that quadruple is what routes this entry to
+  // the right students' own schedules in SmartAttendance, without
+  // semester 1 and semester 2 entries for the same course & year
+  // colliding.
   await page.fill('input[name="department"]', "School of Computing");
   await page.fill('input[name="course"]', "BSc CS");
   await page.fill('input[name="year"]', "2");
+  await page.fill('input[name="semester"]', "1");
   await page.selectOption('select[name="day_of_week"]', "TUESDAY");
   await page.fill('input[name="start_time"]', "09:00");
   await page.fill('input[name="end_time"]', "11:00");
@@ -55,6 +58,19 @@ test("full timetable entry lifecycle: create, filter, postpone, reactivate, canc
   await expect(page.getByText("No timetable entries yet.")).toBeVisible();
 
   await page.fill('input[placeholder="Filter by course"]', "");
+  await page.locator("button", { hasText: "Apply filters" }).click();
+  await page.waitForSelector("text=Data Structures", { timeout: 10000 });
+
+  // Filter by matching semester keeps it visible; non-matching hides it.
+  await page.fill('input[placeholder="Filter by semester"]', "1");
+  await page.locator("button", { hasText: "Apply filters" }).click();
+  await expect(page.getByText("Data Structures")).toBeVisible();
+
+  await page.fill('input[placeholder="Filter by semester"]', "2");
+  await page.locator("button", { hasText: "Apply filters" }).click();
+  await expect(page.getByText("No timetable entries yet.")).toBeVisible();
+
+  await page.fill('input[placeholder="Filter by semester"]', "");
   await page.locator("button", { hasText: "Apply filters" }).click();
   await page.waitForSelector("text=Data Structures", { timeout: 10000 });
 

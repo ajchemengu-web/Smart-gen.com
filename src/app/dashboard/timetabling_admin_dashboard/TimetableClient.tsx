@@ -31,12 +31,14 @@ export default function TimetableClient() {
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [courseFilter, setCourseFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
+  const [semesterFilter, setSemesterFilter] = useState("");
 
   async function load() {
     const params = new URLSearchParams();
     if (departmentFilter) params.set("department", departmentFilter);
     if (courseFilter) params.set("course", courseFilter);
     if (yearFilter) params.set("year", yearFilter);
+    if (semesterFilter) params.set("semester", semesterFilter);
     const query = params.toString();
 
     try {
@@ -106,6 +108,7 @@ export default function TimetableClient() {
       department: String(formData.get("department") ?? ""),
       course: String(formData.get("course") ?? ""),
       year: Number(formData.get("year")),
+      semester: Number(formData.get("semester")),
       day_of_week: String(formData.get("day_of_week") ?? ""),
       start_time: String(formData.get("start_time") ?? ""),
       end_time: String(formData.get("end_time") ?? ""),
@@ -167,10 +170,12 @@ export default function TimetableClient() {
       <section className={styles.section}>
         <h2>Add a timetable entry</h2>
         <p className={styles.helpText}>
-          Set Department, then Course, then Year first — that
-          department/course/year combination is what routes this
-          entry to the right students&apos; own schedules in
-          SmartAttendance (docs/PRD.md §6).
+          Set Department, then Course, then Year, then Semester first —
+          that department/course/year/semester combination is what
+          routes this entry to the right students&apos; own schedules
+          in SmartAttendance (docs/PRD.md §6), and keeps semester 1
+          and semester 2 entries for the same course & year from
+          colliding.
         </p>
         <form action={handleCreate} className={styles.form}>
           <label className={styles.field}>
@@ -184,6 +189,10 @@ export default function TimetableClient() {
           <label className={styles.field}>
             <span>Year</span>
             <input name="year" type="number" min={1} max={8} required />
+          </label>
+          <label className={styles.field}>
+            <span>Semester</span>
+            <input name="semester" type="number" min={1} max={2} required />
           </label>
           <label className={styles.field}>
             <span>Day</span>
@@ -247,6 +256,14 @@ export default function TimetableClient() {
             value={yearFilter}
             onChange={(event) => setYearFilter(event.target.value)}
           />
+          <input
+            placeholder="Filter by semester"
+            type="number"
+            min={1}
+            max={2}
+            value={semesterFilter}
+            onChange={(event) => setSemesterFilter(event.target.value)}
+          />
           <button
             type="button"
             className={styles.actionButton}
@@ -265,6 +282,7 @@ export default function TimetableClient() {
                 <th>Department</th>
                 <th>Course</th>
                 <th>Yr</th>
+                <th>Sem</th>
                 <th>Day</th>
                 <th>Time</th>
                 <th>Unit</th>
@@ -280,6 +298,7 @@ export default function TimetableClient() {
                   <td>{entry.department ?? "—"}</td>
                   <td>{entry.course}</td>
                   <td>{entry.year}</td>
+                  <td>{entry.semester ?? "—"}</td>
                   <td>{entry.day_of_week}</td>
                   <td>
                     {entry.start_time}–{entry.end_time}

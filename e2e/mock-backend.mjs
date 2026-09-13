@@ -208,10 +208,12 @@ const server = createServer(async (req, res) => {
     const course = url.searchParams.get("course");
     const year = url.searchParams.get("year");
     const department = url.searchParams.get("department");
+    const semester = url.searchParams.get("semester");
     let results = state.timetable;
     if (course) results = results.filter((e) => e.course === course);
     if (year) results = results.filter((e) => e.year === Number(year));
     if (department) results = results.filter((e) => e.department === department);
+    if (semester) results = results.filter((e) => e.semester === Number(semester));
     reply(res, 200, results);
     return;
   }
@@ -225,6 +227,7 @@ const server = createServer(async (req, res) => {
       created_by: "tt1",
       created_at: "2026-09-13T00:00:00",
       department: null,
+      semester: null,
       ...body,
       day_of_week: body.day_of_week.toUpperCase(),
     };

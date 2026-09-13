@@ -29,7 +29,9 @@ you so rather than showing a dashboard.
   `/dashboard/enrollment_dashboard` — real, working dashboards backed
   by the live backend (guard admit/reject queue + access log;
   student/guest/access-log overview; create/postpone/cancel/delete
-  timetable entries filtered by course and year; a Dean's
+  timetable entries filtered by department/course/year/semester
+  (semester 1 and semester 2 commonly differ for the same course &
+  year); a Dean's
   department-scoped student roster, classification counts, unit/
   timetable totals, department timetable, and venue cameras; camera
   management; lecturer profile registration; access analytics +

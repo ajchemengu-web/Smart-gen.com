@@ -215,6 +215,7 @@ export type TimetableEntry = {
   course: string;
   year: number;
   department: string | null;
+  semester: number | null;
   day_of_week: string;
   start_time: string;
   end_time: string;
@@ -228,12 +229,19 @@ export type TimetableEntry = {
 
 export function getTimetable(
   token: string,
-  filters?: { course?: string; year?: number; department?: string }
+  filters?: {
+    course?: string;
+    year?: number;
+    department?: string;
+    semester?: number;
+  }
 ) {
   const params = new URLSearchParams();
   if (filters?.course) params.set("course", filters.course);
   if (filters?.year != null) params.set("year", String(filters.year));
   if (filters?.department) params.set("department", filters.department);
+  if (filters?.semester != null)
+    params.set("semester", String(filters.semester));
   const query = params.toString();
 
   return request<TimetableEntry[]>(
@@ -247,6 +255,7 @@ export function createTimetableEntry(
   fields: {
     course: string;
     year: number;
+    semester: number;
     day_of_week: string;
     start_time: string;
     end_time: string;

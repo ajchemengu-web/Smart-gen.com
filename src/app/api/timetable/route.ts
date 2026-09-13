@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
   const year = yearParam ? Number(yearParam) : undefined;
   const department =
     request.nextUrl.searchParams.get("department") ?? undefined;
+  const semesterParam = request.nextUrl.searchParams.get("semester");
+  const semester = semesterParam ? Number(semesterParam) : undefined;
 
   try {
     return NextResponse.json(
@@ -19,6 +21,7 @@ export async function GET(request: NextRequest) {
         course,
         year,
         department,
+        semester,
       })
     );
   } catch (error) {
