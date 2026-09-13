@@ -28,10 +28,13 @@ you so rather than showing a dashboard.
   `/dashboard/dean_admin_dashboard`,
   `/dashboard/enrollment_dashboard` — real, working dashboards backed
   by the live backend (guard admit/reject queue + access log;
-  student/guest/access-log overview; create/postpone/cancel/delete
-  timetable entries filtered by department/course/year/semester
-  (semester 1 and semester 2 commonly differ for the same course &
-  year); a Dean's
+  student/guest/access-log overview; a unit registry (unit_code/
+  unit_name/department/course/year/semester, with a lecturer
+  self-registered from the SmartAttendance app or assigned/reassigned
+  here) that timetable entries reference instead of a facilitator
+  name typed per row; create/postpone/cancel/delete timetable
+  entries filtered by department/course/year/semester (semester 1
+  and semester 2 commonly differ for the same course & year); a Dean's
   department-scoped student roster, classification counts, unit/
   timetable totals, department timetable, and venue cameras; camera
   management; lecturer profile registration; access analytics +

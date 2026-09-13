@@ -38,6 +38,8 @@ function resetState() {
   state = {
     timetable: [],
     nextTimetableId: 1,
+    units: [],
+    nextUnitId: 1,
     cameras: [],
     lecturers: [],
     accessLogs: [
@@ -203,17 +205,80 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (path === "/units" && method === "GET") {
+    if (!auth(req, res, ["ADMIN", "LECTURER"])) return;
+    const department = url.searchParams.get("department");
+    const course = url.searchParams.get("course");
+    const year = url.searchParams.get("year");
+    const semester = url.searchParams.get("semester");
+    const lecturerId = url.searchParams.get("lecturer_id");
+    const unclaimed = url.searchParams.get("unclaimed") === "true";
+    let results = state.units;
+    if (department) results = results.filter((u) => u.department === department);
+    if (course) results = results.filter((u) => u.course === course);
+    if (year) results = results.filter((u) => u.year === Number(year));
+    if (semester) results = results.filter((u) => u.semester === Number(semester));
+    if (lecturerId) results = results.filter((u) => u.lecturer_id === lecturerId);
+    if (unclaimed) results = results.filter((u) => !u.lecturer_id);
+    reply(res, 200, results);
+    return;
+  }
+
+  if (path === "/units" && method === "POST") {
+    if (!auth(req, res, ["ADMIN"])) return;
+    const body = await readBody(req);
+    if (state.units.some((u) => u.unit_code === body.unit_code)) {
+      return reply(res, 400, { detail: "unit_code already exists" });
+    }
+    const unit = {
+      id: state.nextUnitId++,
+      department: null,
+      lecturer_id: null,
+      created_by: "tt1",
+      created_at: "2026-09-13T00:00:00",
+      ...body,
+    };
+    state.units.push(unit);
+    reply(res, 200, unit);
+    return;
+  }
+
+  if (path.match(/^\/units\/\d+\/lecturer$/) && method === "PATCH") {
+    if (!auth(req, res, ["ADMIN"])) return;
+    const id = Number(path.split("/")[2]);
+    const body = await readBody(req);
+    const unit = state.units.find((u) => u.id === id);
+    if (!unit) return reply(res, 404, { detail: "not found" });
+    unit.lecturer_id = body.lecturer_id ?? null;
+    reply(res, 200, unit);
+    return;
+  }
+
+  if (path.match(/^\/units\/\d+\/(claim|unclaim)$/) && method === "PATCH") {
+    if (!auth(req, res, ["LECTURER"])) return;
+    const id = Number(path.split("/")[2]);
+    const unit = state.units.find((u) => u.id === id);
+    if (!unit) return reply(res, 404, { detail: "not found" });
+    unit.lecturer_id = path.endsWith("/claim") ? "L1" : null;
+    reply(res, 200, unit);
+    return;
+  }
+
   if (path === "/timetable" && method === "GET") {
     if (!auth(req, res, ["ADMIN", "STUDENT", "LECTURER"])) return;
     const course = url.searchParams.get("course");
     const year = url.searchParams.get("year");
     const department = url.searchParams.get("department");
     const semester = url.searchParams.get("semester");
+    const lecturerId = url.searchParams.get("lecturer_id");
+    const unitId = url.searchParams.get("unit_id");
     let results = state.timetable;
     if (course) results = results.filter((e) => e.course === course);
     if (year) results = results.filter((e) => e.year === Number(year));
     if (department) results = results.filter((e) => e.department === department);
     if (semester) results = results.filter((e) => e.semester === Number(semester));
+    if (lecturerId) results = results.filter((e) => e.lecturer_id === lecturerId);
+    if (unitId) results = results.filter((e) => e.unit_id === Number(unitId));
     reply(res, 200, results);
     return;
   }
@@ -221,15 +286,29 @@ const server = createServer(async (req, res) => {
   if (path === "/timetable" && method === "POST") {
     if (!auth(req, res, ["ADMIN"])) return;
     const body = await readBody(req);
+    const unit = state.units.find((u) => u.id === body.unit_id);
+    if (!unit) return reply(res, 400, { detail: "Unknown unit_id" });
+    const lecturer = state.lecturers.find(
+      (l) => l.lecturer_id === unit.lecturer_id
+    );
     const entry = {
       id: state.nextTimetableId++,
+      unit_id: unit.id,
+      unit_code: unit.unit_code,
+      unit_name: unit.unit_name,
+      course: unit.course,
+      year: unit.year,
+      department: unit.department,
+      semester: unit.semester,
+      lecturer_id: unit.lecturer_id,
+      facilitator: lecturer ? lecturer.full_name : null,
+      day_of_week: body.day_of_week.toUpperCase(),
+      start_time: body.start_time,
+      end_time: body.end_time,
+      venue: body.venue,
       status: "ON",
       created_by: "tt1",
       created_at: "2026-09-13T00:00:00",
-      department: null,
-      semester: null,
-      ...body,
-      day_of_week: body.day_of_week.toUpperCase(),
     };
     state.timetable.push(entry);
     reply(res, 200, entry);

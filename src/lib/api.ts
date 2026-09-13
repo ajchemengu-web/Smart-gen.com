@@ -207,20 +207,98 @@ export function getGuests(token: string) {
 }
 
 // ============================================================
+// UNITS (docs/PRD.md §6, §8)
+// ============================================================
+//
+// The Timetabling Admin creates a unit once; a lecturer then
+// self-registers (claims) the units they teach from the
+// SmartAttendance app — that claim, not a facilitator name typed
+// per timetable row, is what timetable_entries.lecturer_id derives
+// from. See Alternative_Identifier's unit_service.py.
+
+export type Unit = {
+  id: number;
+  unit_code: string;
+  unit_name: string;
+  department: string | null;
+  course: string;
+  year: number;
+  semester: number;
+  lecturer_id: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export function getUnits(
+  token: string,
+  filters?: {
+    department?: string;
+    course?: string;
+    year?: number;
+    semester?: number;
+    unclaimed?: boolean;
+  }
+) {
+  const params = new URLSearchParams();
+  if (filters?.department) params.set("department", filters.department);
+  if (filters?.course) params.set("course", filters.course);
+  if (filters?.year != null) params.set("year", String(filters.year));
+  if (filters?.semester != null)
+    params.set("semester", String(filters.semester));
+  if (filters?.unclaimed) params.set("unclaimed", "true");
+  const query = params.toString();
+
+  return request<Unit[]>(`/units${query ? `?${query}` : ""}`, undefined, token);
+}
+
+export function createUnit(
+  fields: {
+    unit_code: string;
+    unit_name: string;
+    course: string;
+    year: number;
+    semester: number;
+    department?: string;
+  },
+  token: string
+) {
+  return postJson<Unit>("/units", fields, token);
+}
+
+export function setUnitLecturer(
+  unitId: number,
+  lecturerId: string | null,
+  token: string
+) {
+  return request<Unit>(
+    `/units/${unitId}/lecturer`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lecturer_id: lecturerId }),
+    },
+    token
+  );
+}
+
+// ============================================================
 // TIMETABLING (docs/PRD.md §8)
 // ============================================================
 
 export type TimetableEntry = {
   id: number;
+  unit_id: number | null;
+  unit_code: string | null;
   course: string;
   year: number;
   department: string | null;
   semester: number | null;
+  lecturer_id: string | null;
   day_of_week: string;
   start_time: string;
   end_time: string;
   unit_name: string;
-  facilitator: string;
+  facilitator: string | null;
   venue: string;
   status: string;
   created_by: string | null;
@@ -234,6 +312,8 @@ export function getTimetable(
     year?: number;
     department?: string;
     semester?: number;
+    lecturerId?: string;
+    unitId?: number;
   }
 ) {
   const params = new URLSearchParams();
@@ -242,6 +322,8 @@ export function getTimetable(
   if (filters?.department) params.set("department", filters.department);
   if (filters?.semester != null)
     params.set("semester", String(filters.semester));
+  if (filters?.lecturerId) params.set("lecturer_id", filters.lecturerId);
+  if (filters?.unitId != null) params.set("unit_id", String(filters.unitId));
   const query = params.toString();
 
   return request<TimetableEntry[]>(
@@ -253,16 +335,11 @@ export function getTimetable(
 
 export function createTimetableEntry(
   fields: {
-    course: string;
-    year: number;
-    semester: number;
+    unit_id: number;
     day_of_week: string;
     start_time: string;
     end_time: string;
-    unit_name: string;
-    facilitator: string;
     venue: string;
-    department?: string;
   },
   token: string
 ) {
