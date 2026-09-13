@@ -1,4 +1,5 @@
 import GuardDashboardClient from "./GuardDashboardClient";
+import LogoutButton from "@/components/LogoutButton";
 import shell from "@/components/DashboardShell.module.css";
 
 export const metadata = {
@@ -9,7 +10,10 @@ export default function GuardDashboardPage() {
   return (
     <main className={shell.page}>
       <div className={shell.container}>
-        <h1>Guard Dashboard</h1>
+        <div className={shell.headerRow}>
+          <h1>Guard Dashboard</h1>
+          <LogoutButton />
+        </div>
         <p className={shell.subtitle}>
           Live queue of unknown guests awaiting Admit/Reject, and the
           recent access log. Refreshes automatically every 5 seconds.

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import LogoutButton from "@/components/LogoutButton";
 import styles from "../../form.module.css";
 
 const DASHBOARDS: Record<
@@ -55,6 +56,7 @@ export default async function DashboardPage({
           §8) are not built yet. You landed here because your login
           resolved to <code>{slug}</code>.
         </p>
+        <LogoutButton />
       </div>
     </main>
   );

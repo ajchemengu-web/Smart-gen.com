@@ -1,7 +1,13 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ApiError, enroll, login } from "@/lib/api";
+import {
+  encryptSession,
+  SESSION_COOKIE_NAME,
+  SESSION_DURATION_MS,
+} from "@/lib/session";
 
 export type FormState = {
   error?: string;
@@ -51,7 +57,30 @@ export async function loginAction(
     };
   }
 
+  const session = await encryptSession({
+    username: result.username,
+    role: result.role,
+    adminTier: result.admin_tier,
+    dashboard: result.dashboard,
+  });
+
+  const cookieStore = await cookies();
+
+  cookieStore.set(SESSION_COOKIE_NAME, session, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    expires: new Date(Date.now() + SESSION_DURATION_MS),
+  });
+
   redirect(`/dashboard/${result.dashboard}`);
+}
+
+export async function logoutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE_NAME);
+  redirect("/login");
 }
 
 export async function enrollAction(
