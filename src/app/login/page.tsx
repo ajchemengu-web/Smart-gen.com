@@ -1,4 +1,3 @@
-import Link from "next/link";
 import LoginForm from "./LoginForm";
 import styles from "../form.module.css";
 
@@ -17,8 +16,8 @@ export default function LoginPage() {
         </p>
         <LoginForm />
         <p className={styles.footnote}>
-          Need to enroll a new admin, guard, or staff member?{" "}
-          <Link href="/enroll">Go to Enrollment</Link>
+          Admins can enroll new users (Student, Lecturer, Guard, Staff,
+          or Admin) from their dashboard after signing in.
         </p>
       </div>
     </main>

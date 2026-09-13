@@ -21,6 +21,11 @@ export type SessionPayload = {
   role: string;
   adminTier: string | null;
   dashboard: string;
+  // The backend's own JWT (POST /login's access_token — see
+  // Alternative_Identifier's src/api/deps.py). Carried inside this
+  // cookie and forwarded as a Bearer header on every proxied call
+  // (src/lib/api.ts) — the browser never sees it directly.
+  accessToken: string;
 };
 
 // Resolved lazily (inside the functions below), not at module load —

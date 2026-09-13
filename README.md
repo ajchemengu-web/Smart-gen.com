@@ -18,9 +18,10 @@ you so rather than showing a dashboard.
   cookie (`src/lib/session.ts`) — there's no session store on the
   backend, so the session is created and verified entirely here.
 - `/enroll` — create a login for a Student, Lecturer, Guard, Staff
-  member, or Admin (`docs/PRD.md` §5). **Not access-restricted yet**
-  — see the note in the recognition-engine repo's
-  `src/services/auth_service.py`.
+  member, or Admin (`docs/PRD.md` §5). Admin-only: `src/proxy.ts`
+  redirects anyone else away, and the request itself carries the
+  signed-in admin's access_token, since the backend's own POST
+  /enroll now requires one too.
 - `/dashboard/guard_dashboard`, `/dashboard/original_admin_dashboard`,
   `/dashboard/security_admin_dashboard` — real, working dashboards
   backed by the live backend (guard admit/reject queue + access log;
@@ -28,10 +29,19 @@ you so rather than showing a dashboard.
   (Timetabling, Dean, Enrollment/Temporary Admin) is still a
   placeholder via `/dashboard/[slug]` — real content per
   `docs/PRD.md` §8 needs backend features that don't exist yet.
-- `src/proxy.ts` protects every `/dashboard/*` route: no session ->
-  redirected to `/login`; logged in but the URL doesn't match your
-  own `dashboard` slug -> bounced back to it. A "Sign out" button on
-  each dashboard clears the session.
+- `src/proxy.ts` protects every `/dashboard/*` route and `/enroll`:
+  no session -> redirected to `/login`; logged in but the URL
+  doesn't match your own `dashboard` slug (or, for `/enroll`, your
+  role isn't ADMIN) -> bounced back to your own dashboard. A "Sign
+  out" button on each dashboard clears the session.
+- The backend itself (`Alternative_Identifier`) now requires
+  authentication on every endpoint except `POST /login` — this app's
+  session cookie carries the `access_token` that `/login` returns,
+  and forwards it as a Bearer header on every proxied call
+  (`src/lib/api.ts`, `src/lib/routeAuth.ts`). The Route Handlers
+  under `src/app/api/*` also check the session themselves (not just
+  `src/proxy.ts`), since they're a separate attack surface someone
+  could hit directly.
 
 ## Backend
 

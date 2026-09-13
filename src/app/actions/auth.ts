@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ApiError, enroll, login } from "@/lib/api";
 import {
+  decryptSession,
   encryptSession,
   SESSION_COOKIE_NAME,
   SESSION_DURATION_MS,
@@ -62,6 +63,7 @@ export async function loginAction(
     role: result.role,
     adminTier: result.admin_tier,
     dashboard: result.dashboard,
+    accessToken: result.access_token,
   });
 
   const cookieStore = await cookies();
@@ -100,15 +102,31 @@ export async function enrollAction(
     return { error: "Username, password, email, and role are required." };
   }
 
+  const cookieStore = await cookies();
+  const session = await decryptSession(
+    cookieStore.get(SESSION_COOKIE_NAME)?.value
+  );
+
+  if (!session || session.role !== "ADMIN") {
+    // Mirrors the backend: POST /enroll requires an ADMIN
+    // access_token (src/api/deps.py in Alternative_Identifier).
+    return {
+      error: "You must be signed in as an Admin to enroll a new user.",
+    };
+  }
+
   try {
-    const result = await enroll({
-      username,
-      password,
-      email,
-      role,
-      admin_tier: role === "ADMIN" ? adminTier : undefined,
-      linked_person_id: linkedPersonId || undefined,
-    });
+    const result = await enroll(
+      {
+        username,
+        password,
+        email,
+        role,
+        admin_tier: role === "ADMIN" ? adminTier : undefined,
+        linked_person_id: linkedPersonId || undefined,
+      },
+      session.accessToken
+    );
 
     const dashboardLabel = result.dashboard
       ? (DASHBOARD_LABELS[result.dashboard] ?? result.dashboard)

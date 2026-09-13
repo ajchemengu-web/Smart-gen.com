@@ -1,12 +1,25 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import EnrollForm from "./EnrollForm";
+import { decryptSession, SESSION_COOKIE_NAME } from "@/lib/session";
 import styles from "../form.module.css";
 
 export const metadata = {
   title: "Enroll a user — Smart Gen",
 };
 
-export default function EnrollPage() {
+export default async function EnrollPage() {
+  const cookieStore = await cookies();
+  const session = await decryptSession(
+    cookieStore.get(SESSION_COOKIE_NAME)?.value
+  );
+
+  // src/proxy.ts already guarantees an ADMIN session reaches this
+  // page at all; session is only possibly null here in the instant
+  // between that check and this render, which redirect() below
+  // covers defensively rather than crashing on session.dashboard.
+  const backHref = session ? `/dashboard/${session.dashboard}` : "/login";
+
   return (
     <main className={styles.page}>
       <div className={styles.card}>
@@ -17,14 +30,9 @@ export default function EnrollPage() {
           separately in the recognition engine — this only creates the
           login/dashboard-routing record.
         </p>
-        <p className={styles.warning}>
-          This page is not access-restricted yet — see the note at the top
-          of src/services/auth_service.py in the recognition-engine repo.
-          Treat it as an internal tool for now.
-        </p>
         <EnrollForm />
         <p className={styles.footnote}>
-          <Link href="/login">Back to sign in</Link>
+          <Link href={backHref}>Back to dashboard</Link>
         </p>
       </div>
     </main>

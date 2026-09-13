@@ -34,6 +34,24 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname === "/enroll") {
+    // Mirrors the backend: POST /enroll requires an ADMIN
+    // access_token, any tier (src/api/deps.py in
+    // Alternative_Identifier) — same rule enforced here so a
+    // logged-out or non-admin visitor never even sees the form.
+    if (!session) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    if (session.role !== "ADMIN") {
+      return NextResponse.redirect(
+        new URL(`/dashboard/${session.dashboard}`, request.url)
+      );
+    }
+
+    return NextResponse.next();
+  }
+
   if (pathname === "/login" && session) {
     return NextResponse.redirect(
       new URL(`/dashboard/${session.dashboard}`, request.url)
@@ -44,5 +62,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/login", "/enroll"],
 };

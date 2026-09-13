@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AdminOverviewClient from "@/components/AdminOverviewClient";
 import LogoutButton from "@/components/LogoutButton";
 import shell from "@/components/DashboardShell.module.css";
@@ -12,7 +13,12 @@ export default function OriginalAdminDashboardPage() {
       <div className={shell.container}>
         <div className={shell.headerRow}>
           <h1>Original Admin</h1>
-          <LogoutButton />
+          <div className={shell.headerActions}>
+            <Link href="/enroll" className={shell.navLink}>
+              Enroll a user
+            </Link>
+            <LogoutButton />
+          </div>
         </div>
         <p className={shell.subtitle}>
           System-wide overview across SmartAccess. Full admin management
