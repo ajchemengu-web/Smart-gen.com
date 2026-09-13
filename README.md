@@ -25,22 +25,24 @@ you so rather than showing a dashboard.
 - `/dashboard/guard_dashboard`, `/dashboard/original_admin_dashboard`,
   `/dashboard/security_admin_dashboard`,
   `/dashboard/timetabling_admin_dashboard`,
-  `/dashboard/dean_admin_dashboard` — real, working dashboards backed
+  `/dashboard/dean_admin_dashboard`,
+  `/dashboard/enrollment_dashboard` — real, working dashboards backed
   by the live backend (guard admit/reject queue + access log;
   student/guest/access-log overview; create/postpone/cancel/delete
   timetable entries filtered by course and year; a Dean's
   department-scoped student roster, classification counts, unit/
   timetable totals, department timetable, and venue cameras; camera
-  management — per `docs/PRD.md` §8). The Original Admin has full
-  camera control (provision/configure/remove); the Security Admin
-  can configure/change status but not provision or remove one; the
-  Dean gets a read-only, department-filtered camera view
+  management; a Temporary Admin's enrollment-only form — per
+  `docs/PRD.md` §8). The Original Admin has full camera control
+  (provision/configure/remove); the Security Admin can configure/
+  change status but not provision or remove one; the Dean gets a
+  read-only, department-filtered camera view
   (`src/components/CameraManagementClient.tsx`). The Dean
   dashboard's "class logs" stays out of scope until the
-  SmartAttendance classroom-camera pipeline exists. Every other
-  dashboard slug (Enrollment/Temporary Admin) is still a placeholder
-  via `/dashboard/[slug]` — real content per `docs/PRD.md` §8 needs
-  backend features that don't exist yet.
+  SmartAttendance classroom-camera pipeline exists. Every dashboard
+  slug `auth_service.resolve_dashboard()` can hand back now has a
+  real page — `/dashboard/[slug]` is just a fallback for any future/
+  unmapped slug.
 - `src/proxy.ts` protects every `/dashboard/*` route and `/enroll`:
   no session -> redirected to `/login`; logged in but the URL
   doesn't match your own `dashboard` slug (or, for `/enroll`, your

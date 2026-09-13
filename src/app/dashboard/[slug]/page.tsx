@@ -2,34 +2,18 @@ import { notFound } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
 import styles from "../../form.module.css";
 
+// Every dashboard slug Alternative_Identifier's auth_service.
+// resolve_dashboard() can hand back now has a real implementation
+// under src/app/dashboard/<slug>/, which Next.js resolves in
+// preference to this dynamic [slug] route for those exact paths:
+// original_admin_dashboard, security_admin_dashboard,
+// timetabling_admin_dashboard, dean_admin_dashboard,
+// enrollment_dashboard, guard_dashboard. This map exists only as a
+// fallback for any future/unmapped dashboard slug.
 const DASHBOARDS: Record<
   string,
   { title: string; description: string }
-> = {
-  // original_admin_dashboard and security_admin_dashboard have real
-  // implementations at src/app/dashboard/original_admin_dashboard/
-  // and .../security_admin_dashboard/, which Next.js resolves in
-  // preference to this dynamic [slug] route for those exact paths —
-  // intentionally not listed here.
-  // timetabling_admin_dashboard has a real implementation at
-  // src/app/dashboard/timetabling_admin_dashboard/page.tsx, which
-  // Next.js resolves in preference to this dynamic [slug] route for
-  // that exact path — intentionally not listed here.
-  // dean_admin_dashboard has a real implementation at
-  // src/app/dashboard/dean_admin_dashboard/page.tsx, which Next.js
-  // resolves in preference to this dynamic [slug] route for that
-  // exact path — intentionally not listed here.
-  enrollment_dashboard: {
-    title: "Enrollment (Temporary Admin)",
-    description:
-      "Data entry and facial enrollment only. Access expires once " +
-      "the assigned task is marked complete.",
-  },
-  // guard_dashboard has a real implementation at
-  // src/app/dashboard/guard_dashboard/page.tsx, which Next.js
-  // resolves in preference to this dynamic [slug] route for that
-  // exact path — it is intentionally not listed here.
-};
+> = {};
 
 export default async function DashboardPage({
   params,
