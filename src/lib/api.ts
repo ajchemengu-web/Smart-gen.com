@@ -70,6 +70,25 @@ function postJson<T>(path: string, body: object, token?: string) {
   );
 }
 
+// A handful of backend endpoints (POST /watchlist, POST /enroll/
+// student-face) accept an optional file upload alongside plain
+// fields, which makes FastAPI treat the whole request as
+// multipart/form-data rather than JSON — even the plain string
+// fields must travel as form fields. No Content-Type header here:
+// fetch sets the multipart boundary itself from the FormData body.
+function postForm<T>(
+  path: string,
+  fields: Record<string, string | undefined>,
+  token?: string
+) {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined && value !== "") form.append(key, value);
+  }
+
+  return request<T>(path, { method: "POST", body: form }, token);
+}
+
 // ============================================================
 // LOGIN / ENROLLMENT (docs/PRD.md §5, §9)
 // ============================================================
@@ -567,6 +586,163 @@ export type AnalyticsSummary = {
 export function getAnalyticsSummary(token: string, sinceDays?: number) {
   const query = sinceDays != null ? `?since_days=${sinceDays}` : "";
   return request<AnalyticsSummary>(`/analytics/summary${query}`, undefined, token);
+}
+
+// ============================================================
+// SMARTACCESS: WATCHLIST / TARGET TRACKING (docs/PRD.md §6.3a, §8)
+// ============================================================
+//
+// A dashboard surface dedicated to SmartAccess itself (Security/
+// Original Admin). A target with a stored embedding is checked by
+// the live recognition pipeline ahead of students/guests — see
+// Alternative_Identifier's watchlist_service.py. Photo-based
+// enrollment (POST /watchlist's optional `images`) has no web
+// upload UI yet, same gap as student facial enrollment — this
+// dashboard creates a named/described record; wiring a photo
+// through to a stored embedding is a follow-up.
+
+export type WatchlistTarget = {
+  target_id: string;
+  full_name: string;
+  description: string | null;
+  reason: string | null;
+  status: string;
+  embedding_file: string | null;
+  created_by: string | null;
+  created_at: string;
+  resolved_by: string | null;
+  resolved_at: string | null;
+};
+
+export type WatchlistSighting = {
+  id: number;
+  person_type: string;
+  person_identifier: string;
+  entrance: string | null;
+  recognition_score: number | null;
+  decision: string | null;
+  liveness_score: number | null;
+  timestamp: string;
+};
+
+export function getWatchlist(token: string, status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return request<WatchlistTarget[]>(`/watchlist${query}`, undefined, token);
+}
+
+export function createWatchlistTarget(
+  fields: { full_name: string; description?: string; reason?: string },
+  token: string
+) {
+  return postForm<WatchlistTarget>("/watchlist", fields, token);
+}
+
+export function getWatchlistSightings(targetId: string, token: string) {
+  return request<WatchlistSighting[]>(
+    `/watchlist/${encodeURIComponent(targetId)}/sightings`,
+    undefined,
+    token
+  );
+}
+
+export function resolveWatchlistTarget(targetId: string, token: string) {
+  return request(
+    `/watchlist/${encodeURIComponent(targetId)}/resolve`,
+    { method: "PATCH" },
+    token
+  );
+}
+
+export function reactivateWatchlistTarget(targetId: string, token: string) {
+  return request(
+    `/watchlist/${encodeURIComponent(targetId)}/reactivate`,
+    { method: "PATCH" },
+    token
+  );
+}
+
+// ============================================================
+// SMARTACCESS: INVESTIGATIONS (docs/PRD.md §6.3a, §8)
+// ============================================================
+//
+// Same dashboard/role scope as the watchlist above — a lightweight
+// case file with an append-only note timeline, optionally tied to
+// one watchlist target.
+
+export type InvestigationNote = {
+  id: number;
+  case_id: string;
+  author: string | null;
+  note: string;
+  created_at: string;
+};
+
+export type Investigation = {
+  case_id: string;
+  title: string;
+  description: string | null;
+  target_id: string | null;
+  status: string;
+  opened_by: string | null;
+  opened_at: string;
+  closed_by: string | null;
+  closed_at: string | null;
+};
+
+export type InvestigationWithNotes = Investigation & {
+  notes: InvestigationNote[];
+};
+
+export function getInvestigations(token: string, status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return request<Investigation[]>(`/investigations${query}`, undefined, token);
+}
+
+export function createInvestigation(
+  fields: { title: string; description?: string; target_id?: string },
+  token: string
+) {
+  return postJson<InvestigationWithNotes>("/investigations", fields, token);
+}
+
+export function getInvestigation(caseId: string, token: string) {
+  return request<InvestigationWithNotes>(
+    `/investigations/${encodeURIComponent(caseId)}`,
+    undefined,
+    token
+  );
+}
+
+export function addInvestigationNote(
+  caseId: string,
+  note: string,
+  token: string
+) {
+  return request<InvestigationWithNotes>(
+    `/investigations/${encodeURIComponent(caseId)}/notes`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note }),
+    },
+    token
+  );
+}
+
+export function closeInvestigation(caseId: string, token: string) {
+  return request(
+    `/investigations/${encodeURIComponent(caseId)}/close`,
+    { method: "PATCH" },
+    token
+  );
+}
+
+export function reopenInvestigation(caseId: string, token: string) {
+  return request(
+    `/investigations/${encodeURIComponent(caseId)}/reopen`,
+    { method: "PATCH" },
+    token
+  );
 }
 
 // ============================================================

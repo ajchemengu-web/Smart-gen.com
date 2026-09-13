@@ -54,7 +54,16 @@ you so rather than showing a dashboard.
   Security Admin can configure/change camera status but not
   provision or remove one; the Dean gets a read-only,
   department-filtered camera view
-  (`src/components/CameraManagementClient.tsx`). Both the Guard and
+  (`src/components/CameraManagementClient.tsx`). The Security Admin
+  (or Original Admin) also has a dedicated SmartAccess dashboard at
+  `/dashboard/security_admin_dashboard/investigations`
+  (`SmartAccessClient.tsx`, docs/PRD.md §6.3a): a **watchlist**
+  (register a person of interest; once it has a reference photo on
+  the backend, every live sighting at a checkpoint is logged
+  automatically — a target flag overrides normal admission, even for
+  an otherwise-legitimate member) and **investigations** (lightweight
+  case files, optionally linked to one target, with an append-only
+  note timeline). Both the Guard and
   Admin dashboards' access log
   (`src/components/AccessLogTable.tsx`) let a Guard or Admin flag a
   VERIFIED entry as a false positive after determining, outside this

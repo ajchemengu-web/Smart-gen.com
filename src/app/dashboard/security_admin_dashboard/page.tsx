@@ -15,6 +15,12 @@ export default function SecurityAdminDashboardPage() {
         <div className={shell.headerRow}>
           <h1>Security Admin</h1>
           <div className={shell.headerActions}>
+            <Link
+              href="/dashboard/security_admin_dashboard/investigations"
+              className={shell.navLink}
+            >
+              Target tracking &amp; investigations
+            </Link>
             <Link href="/enroll" className={shell.navLink}>
               Enroll a user
             </Link>

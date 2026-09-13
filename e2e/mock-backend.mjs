@@ -61,6 +61,10 @@ function resetState() {
     guests: [],
     pendingUnknowns: [],
     enrolled: [],
+    watchlist: [],
+    nextWatchlistSeq: 1,
+    investigations: [],
+    nextCaseSeq: 1,
   };
 }
 resetState();
@@ -84,6 +88,19 @@ function auth(req, res, allowedRoles) {
   return user;
 }
 
+// Every /watchlist and /investigations endpoint on the real backend
+// is gated to SECURITY/ORIGINAL admin tiers specifically (not just
+// any ADMIN) — see src/api/main.py's require_admin_tier calls.
+function authSmartAccess(req, res) {
+  const user = auth(req, res, ["ADMIN"]);
+  if (!user) return null;
+  if (!["SECURITY", "ORIGINAL"].includes(user.admin_tier)) {
+    reply(res, 403, { detail: "forbidden" });
+    return null;
+  }
+  return user;
+}
+
 function reply(res, status, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(status, {
@@ -98,6 +115,32 @@ async function readBody(req) {
   for await (const chunk of req) chunks.push(chunk);
   const raw = Buffer.concat(chunks).toString("utf-8");
   return raw ? JSON.parse(raw) : {};
+}
+
+// POST /watchlist accepts an optional file upload alongside plain
+// fields on the real backend, which makes lib/api.ts's postForm()
+// send it as multipart/form-data (even with zero files attached) —
+// mirror that here with a minimal text-field-only multipart parser,
+// since this mock has no framework to do it for us.
+async function readMultipartFields(req) {
+  const contentType = req.headers["content-type"] || "";
+  const boundaryMatch = contentType.match(/boundary=(.+)$/);
+  if (!boundaryMatch) return {};
+
+  const boundary = `--${boundaryMatch[1]}`;
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks).toString("utf-8");
+
+  const fields = {};
+  for (const part of raw.split(boundary)) {
+    const nameMatch = part.match(/name="([^"]+)"/);
+    if (!nameMatch) continue;
+    const valueStart = part.indexOf("\r\n\r\n");
+    if (valueStart === -1) continue;
+    fields[nameMatch[1]] = part.slice(valueStart + 4).replace(/\r\n$/, "");
+  }
+  return fields;
 }
 
 const server = createServer(async (req, res) => {
@@ -506,6 +549,155 @@ const server = createServer(async (req, res) => {
     };
     state.enrolled.push(record);
     reply(res, 200, record);
+    return;
+  }
+
+  if (path === "/watchlist" && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const status = url.searchParams.get("status");
+    let results = state.watchlist;
+    if (status) results = results.filter((t) => t.status === status.toUpperCase());
+    reply(res, 200, results);
+    return;
+  }
+
+  if (path === "/watchlist" && method === "POST") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const fields = await readMultipartFields(req);
+    const target = {
+      target_id: `TGT-${String(state.nextWatchlistSeq++).padStart(4, "0")}`,
+      full_name: fields.full_name,
+      description: fields.description || null,
+      reason: fields.reason || null,
+      status: "ACTIVE",
+      embedding_file: null,
+      created_by: user.username,
+      created_at: "2026-09-13T00:00:00",
+      resolved_by: null,
+      resolved_at: null,
+    };
+    state.watchlist.push(target);
+    reply(res, 200, target);
+    return;
+  }
+
+  if (path.match(/^\/watchlist\/[^/]+\/sightings$/) && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const targetId = decodeURIComponent(path.split("/")[2]);
+    const sightings = state.accessLogs.filter(
+      (log) => log.person_type === "TARGET" && log.person_identifier === targetId
+    );
+    reply(res, 200, sightings);
+    return;
+  }
+
+  if (path.match(/^\/watchlist\/[^/]+\/resolve$/) && method === "PATCH") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const targetId = decodeURIComponent(path.split("/")[2]);
+    const target = state.watchlist.find((t) => t.target_id === targetId);
+    if (!target) return reply(res, 404, { detail: "not found" });
+    target.status = "RESOLVED";
+    target.resolved_by = user.username;
+    target.resolved_at = "2026-09-13T00:00:00";
+    reply(res, 200, { success: true });
+    return;
+  }
+
+  if (path.match(/^\/watchlist\/[^/]+\/reactivate$/) && method === "PATCH") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const targetId = decodeURIComponent(path.split("/")[2]);
+    const target = state.watchlist.find((t) => t.target_id === targetId);
+    if (!target) return reply(res, 404, { detail: "not found" });
+    target.status = "ACTIVE";
+    target.resolved_by = null;
+    target.resolved_at = null;
+    reply(res, 200, { success: true });
+    return;
+  }
+
+  if (path === "/investigations" && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const status = url.searchParams.get("status");
+    let results = state.investigations;
+    if (status) results = results.filter((c) => c.status === status.toUpperCase());
+    reply(res, 200, results);
+    return;
+  }
+
+  if (path === "/investigations" && method === "POST") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const body = await readBody(req);
+    const investigation = {
+      case_id: `CASE-${String(state.nextCaseSeq++).padStart(4, "0")}`,
+      title: body.title,
+      description: body.description || null,
+      target_id: body.target_id || null,
+      status: "OPEN",
+      opened_by: user.username,
+      opened_at: "2026-09-13T00:00:00",
+      closed_by: null,
+      closed_at: null,
+      notes: [],
+    };
+    state.investigations.push(investigation);
+    reply(res, 200, investigation);
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+$/) && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const caseId = decodeURIComponent(path.split("/")[2]);
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (!investigation) return reply(res, 404, { detail: "not found" });
+    reply(res, 200, investigation);
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+\/notes$/) && method === "POST") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const caseId = decodeURIComponent(path.split("/")[2]);
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (!investigation) return reply(res, 404, { detail: "not found" });
+    const body = await readBody(req);
+    investigation.notes.push({
+      id: investigation.notes.length + 1,
+      case_id: caseId,
+      author: user.username,
+      note: body.note,
+      created_at: "2026-09-13T00:00:00",
+    });
+    reply(res, 200, investigation);
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+\/close$/) && method === "PATCH") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const caseId = decodeURIComponent(path.split("/")[2]);
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (!investigation) return reply(res, 404, { detail: "not found" });
+    investigation.status = "CLOSED";
+    investigation.closed_by = user.username;
+    investigation.closed_at = "2026-09-13T00:00:00";
+    reply(res, 200, { success: true });
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+\/reopen$/) && method === "PATCH") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const caseId = decodeURIComponent(path.split("/")[2]);
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (!investigation) return reply(res, 404, { detail: "not found" });
+    investigation.status = "OPEN";
+    investigation.closed_by = null;
+    investigation.closed_at = null;
+    reply(res, 200, { success: true });
     return;
   }
 
