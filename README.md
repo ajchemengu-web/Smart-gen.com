@@ -24,13 +24,19 @@ you so rather than showing a dashboard.
   /enroll now requires one too.
 - `/dashboard/guard_dashboard`, `/dashboard/original_admin_dashboard`,
   `/dashboard/security_admin_dashboard`,
-  `/dashboard/timetabling_admin_dashboard` — real, working dashboards
-  backed by the live backend (guard admit/reject queue + access log;
+  `/dashboard/timetabling_admin_dashboard`,
+  `/dashboard/dean_admin_dashboard` — real, working dashboards backed
+  by the live backend (guard admit/reject queue + access log;
   student/guest/access-log overview; create/postpone/cancel/delete
-  timetable entries filtered by course and year, per `docs/PRD.md`
-  §8). Every other dashboard slug (Dean, Enrollment/Temporary Admin)
-  is still a placeholder via `/dashboard/[slug]` — real content per
-  `docs/PRD.md` §8 needs backend features that don't exist yet.
+  timetable entries filtered by course and year; a Dean's
+  department-scoped student roster, classification counts, unit/
+  timetable totals, and department timetable — per `docs/PRD.md`
+  §8). The Dean dashboard's "class logs" and "venue camera access"
+  are explicitly out of scope until the classroom-camera pipeline
+  and camera management exist. Every other dashboard slug
+  (Enrollment/Temporary Admin) is still a placeholder via
+  `/dashboard/[slug]` — real content per `docs/PRD.md` §8 needs
+  backend features that don't exist yet.
 - `src/proxy.ts` protects every `/dashboard/*` route and `/enroll`:
   no session -> redirected to `/login`; logged in but the URL
   doesn't match your own `dashboard` slug (or, for `/enroll`, your

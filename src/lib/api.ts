@@ -196,6 +196,7 @@ export type TimetableEntry = {
   id: number;
   course: string;
   year: number;
+  department: string | null;
   day_of_week: string;
   start_time: string;
   end_time: string;
@@ -209,11 +210,12 @@ export type TimetableEntry = {
 
 export function getTimetable(
   token: string,
-  filters?: { course?: string; year?: number }
+  filters?: { course?: string; year?: number; department?: string }
 ) {
   const params = new URLSearchParams();
   if (filters?.course) params.set("course", filters.course);
   if (filters?.year != null) params.set("year", String(filters.year));
+  if (filters?.department) params.set("department", filters.department);
   const query = params.toString();
 
   return request<TimetableEntry[]>(
@@ -233,6 +235,7 @@ export function createTimetableEntry(
     unit_name: string;
     facilitator: string;
     venue: string;
+    department?: string;
   },
   token: string
 ) {
@@ -261,6 +264,53 @@ export function deleteTimetableEntry(entryId: number, token: string) {
     { method: "DELETE" },
     token
   );
+}
+
+// ============================================================
+// DEAN OF SCHOOL ADMIN (docs/PRD.md §8)
+// ============================================================
+//
+// Read-only: roster + classification/unit totals for a department,
+// plus the department's timetable (via getTimetable above). Class
+// logs and venue camera access are out of scope — the backend has
+// no classroom-camera pipeline or camera management yet.
+
+export type DeanRosterEntry = {
+  student_id: string;
+  full_name: string;
+  admission_number: string;
+  department: string | null;
+  course: string | null;
+  year: number | null;
+};
+
+export type DeanClassification = {
+  course: string | null;
+  year: number | null;
+  student_count: number;
+};
+
+export type DeanSummary = {
+  department: string | null;
+  total_students: number;
+  roster_by_classification: DeanClassification[];
+  total_units: number;
+  total_active_lectures: number;
+  total_timetable_entries: number;
+};
+
+export function getDeanRoster(token: string, department?: string) {
+  const query = department
+    ? `?department=${encodeURIComponent(department)}`
+    : "";
+  return request<DeanRosterEntry[]>(`/dean/roster${query}`, undefined, token);
+}
+
+export function getDeanSummary(token: string, department?: string) {
+  const query = department
+    ? `?department=${encodeURIComponent(department)}`
+    : "";
+  return request<DeanSummary>(`/dean/summary${query}`, undefined, token);
 }
 
 // ============================================================

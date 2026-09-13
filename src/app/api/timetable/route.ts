@@ -9,10 +9,16 @@ export async function GET(request: NextRequest) {
   const course = request.nextUrl.searchParams.get("course") ?? undefined;
   const yearParam = request.nextUrl.searchParams.get("year");
   const year = yearParam ? Number(yearParam) : undefined;
+  const department =
+    request.nextUrl.searchParams.get("department") ?? undefined;
 
   try {
     return NextResponse.json(
-      await getTimetable(auth.session.accessToken, { course, year })
+      await getTimetable(auth.session.accessToken, {
+        course,
+        year,
+        department,
+      })
     );
   } catch (error) {
     const { status, body } = apiErrorResponse(error);

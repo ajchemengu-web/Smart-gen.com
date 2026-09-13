@@ -15,12 +15,10 @@ const DASHBOARDS: Record<
   // src/app/dashboard/timetabling_admin_dashboard/page.tsx, which
   // Next.js resolves in preference to this dynamic [slug] route for
   // that exact path — intentionally not listed here.
-  dean_admin_dashboard: {
-    title: "Dean of School",
-    description:
-      "Class logs, venue cameras, student rosters, department " +
-      "lecture/unit totals, department timetables.",
-  },
+  // dean_admin_dashboard has a real implementation at
+  // src/app/dashboard/dean_admin_dashboard/page.tsx, which Next.js
+  // resolves in preference to this dynamic [slug] route for that
+  // exact path — intentionally not listed here.
   enrollment_dashboard: {
     title: "Enrollment (Temporary Admin)",
     description:
