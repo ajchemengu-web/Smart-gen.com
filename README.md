@@ -93,6 +93,31 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## End-to-end tests
+
+```bash
+npm run test:e2e
+```
+
+Runs the Playwright suite under `e2e/` against `e2e/mock-backend.mjs`
+(a minimal in-memory stand-in for `Alternative_Identifier`'s FastAPI
+backend — not the real recognition engine, just enough of its API
+shape to exercise this app's own routing/session/UI logic) — no live
+backend or database needed. `playwright.config.ts` starts both the
+mock backend and `next dev` for you.
+
+Covers: login + dashboard routing for every role (including wrong
+password, an already-logged-in visitor bounced from `/login`, a
+logged-in user redirected away from another role's dashboard, and
+sign-out actually clearing the session — all in `e2e/login.spec.ts`),
+a full Timetabling CRUD lifecycle (`e2e/timetabling.spec.ts`), and
+the Temporary Admin enrollment flow (`e2e/enrollment.spec.ts`). Not
+every dashboard has a persisted spec yet (Dean, camera management,
+lecturer profiles, and analytics were verified manually against ad
+hoc mock backends during development, per their own commits, but
+don't have permanent e2e coverage) — a reasonable next addition if
+this suite grows further.
+
 ## Deploy
 
 Deployed on [Vercel](https://vercel.com). Set `API_BASE_URL` and
