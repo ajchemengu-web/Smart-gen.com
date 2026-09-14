@@ -65,9 +65,48 @@ function resetState() {
     nextWatchlistSeq: 1,
     investigations: [],
     nextCaseSeq: 1,
+    investigationTargets: [],
+    investigationUnknowns: [],
   };
 }
 resetState();
+
+// Mirrors investigation_service.py's get_case(): a case's "primary"
+// target_id plus every investigation_targets/investigation_unknowns
+// link row, each resolved against the current watchlist/pendingUnknowns
+// state rather than frozen at link time.
+function resolveCase(investigation) {
+  const targetIds = [];
+  if (investigation.target_id) targetIds.push(investigation.target_id);
+  for (const row of state.investigationTargets) {
+    if (row.case_id === investigation.case_id && !targetIds.includes(row.target_id)) {
+      targetIds.push(row.target_id);
+    }
+  }
+  const linked_targets = targetIds.map((targetId) => {
+    const target = state.watchlist.find((t) => t.target_id === targetId);
+    return {
+      target_id: targetId,
+      full_name: target ? target.full_name : null,
+      status: target ? target.status : null,
+    };
+  });
+
+  const linked_unknowns = state.investigationUnknowns
+    .filter((row) => row.case_id === investigation.case_id)
+    .map((row) => {
+      const unknown = state.pendingUnknowns.find(
+        (u) => u.unknown_id === row.unknown_id
+      );
+      return {
+        unknown_id: row.unknown_id,
+        status: unknown ? unknown.status : null,
+        detected_at: unknown ? unknown.detected_at : null,
+      };
+    });
+
+  return { ...investigation, linked_targets, linked_unknowns };
+}
 
 function auth(req, res, allowedRoles) {
   const header = req.headers["authorization"] || "";
@@ -618,6 +657,24 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (path.match(/^\/watchlist\/[^/]+\/frequency$/) && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const targetId = decodeURIComponent(path.split("/")[2]);
+    const target = state.watchlist.find((t) => t.target_id === targetId);
+    if (!target) return reply(res, 404, { detail: "Target not found" });
+    const counts = new Map();
+    for (const log of state.accessLogs) {
+      if (log.person_type !== "TARGET" || log.person_identifier !== targetId) continue;
+      const entrance = log.entrance || "Unknown location";
+      counts.set(entrance, (counts.get(entrance) || 0) + 1);
+    }
+    const frequency = [...counts.entries()]
+      .map(([entrance, count]) => ({ entrance, count }))
+      .sort((a, b) => b.count - a.count);
+    reply(res, 200, frequency);
+    return;
+  }
+
   if (path.match(/^\/watchlist\/[^/]+\/resolve$/) && method === "PATCH") {
     const user = authSmartAccess(req, res);
     if (!user) return;
@@ -663,6 +720,8 @@ const server = createServer(async (req, res) => {
       description: body.description || null,
       target_id: body.target_id || null,
       status: "OPEN",
+      severity: (body.severity || "MEDIUM").toUpperCase(),
+      assigned_to: body.assigned_to || null,
       opened_by: user.username,
       opened_at: "2026-09-13T00:00:00",
       closed_by: null,
@@ -670,7 +729,7 @@ const server = createServer(async (req, res) => {
       notes: [],
     };
     state.investigations.push(investigation);
-    reply(res, 200, investigation);
+    reply(res, 200, resolveCase(investigation));
     return;
   }
 
@@ -679,7 +738,21 @@ const server = createServer(async (req, res) => {
     const caseId = decodeURIComponent(path.split("/")[2]);
     const investigation = state.investigations.find((c) => c.case_id === caseId);
     if (!investigation) return reply(res, 404, { detail: "not found" });
-    reply(res, 200, investigation);
+    reply(res, 200, resolveCase(investigation));
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+$/) && method === "PATCH") {
+    if (!authSmartAccess(req, res)) return;
+    const caseId = decodeURIComponent(path.split("/")[2]);
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (!investigation) return reply(res, 404, { detail: "not found" });
+    const body = await readBody(req);
+    if (body.title !== undefined) investigation.title = body.title;
+    if (body.description !== undefined) investigation.description = body.description;
+    if (body.severity !== undefined) investigation.severity = body.severity.toUpperCase();
+    if (body.assigned_to !== undefined) investigation.assigned_to = body.assigned_to || null;
+    reply(res, 200, resolveCase(investigation));
     return;
   }
 
@@ -697,7 +770,87 @@ const server = createServer(async (req, res) => {
       note: body.note,
       created_at: "2026-09-13T00:00:00",
     });
-    reply(res, 200, investigation);
+    reply(res, 200, resolveCase(investigation));
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+\/targets$/) && method === "POST") {
+    if (!authSmartAccess(req, res)) return;
+    const caseId = decodeURIComponent(path.split("/")[2]);
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (!investigation) return reply(res, 404, { detail: "not found" });
+    const body = await readBody(req);
+    const target = state.watchlist.find((t) => t.target_id === body.target_id);
+    if (!target) return reply(res, 404, { detail: `Unknown target_id: ${body.target_id}` });
+    const alreadyLinked = state.investigationTargets.some(
+      (row) => row.case_id === caseId && row.target_id === body.target_id
+    );
+    if (!alreadyLinked) {
+      state.investigationTargets.push({ case_id: caseId, target_id: body.target_id });
+    }
+    reply(res, 200, resolveCase(investigation));
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+\/targets\/[^/]+$/) && method === "DELETE") {
+    if (!authSmartAccess(req, res)) return;
+    const [, , rawCaseId, , rawTargetId] = path.split("/");
+    const caseId = decodeURIComponent(rawCaseId);
+    const targetId = decodeURIComponent(rawTargetId);
+
+    // Mirrors investigation_service.py's unlink_target(): the case's
+    // "primary" target_id isn't a investigation_targets row, so it
+    // has to be handled here too or unlinking it would silently
+    // no-op.
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (investigation && investigation.target_id === targetId) {
+      investigation.target_id = null;
+      reply(res, 200, { success: true });
+      return;
+    }
+
+    const before = state.investigationTargets.length;
+    state.investigationTargets = state.investigationTargets.filter(
+      (row) => !(row.case_id === caseId && row.target_id === targetId)
+    );
+    if (state.investigationTargets.length === before) {
+      return reply(res, 404, { detail: "not linked" });
+    }
+    reply(res, 200, { success: true });
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+\/unknowns$/) && method === "POST") {
+    if (!authSmartAccess(req, res)) return;
+    const caseId = decodeURIComponent(path.split("/")[2]);
+    const investigation = state.investigations.find((c) => c.case_id === caseId);
+    if (!investigation) return reply(res, 404, { detail: "not found" });
+    const body = await readBody(req);
+    const unknown = state.pendingUnknowns.find((u) => u.unknown_id === body.unknown_id);
+    if (!unknown) return reply(res, 404, { detail: `Unknown unknown_id: ${body.unknown_id}` });
+    const alreadyLinked = state.investigationUnknowns.some(
+      (row) => row.case_id === caseId && row.unknown_id === body.unknown_id
+    );
+    if (!alreadyLinked) {
+      state.investigationUnknowns.push({ case_id: caseId, unknown_id: body.unknown_id });
+    }
+    reply(res, 200, resolveCase(investigation));
+    return;
+  }
+
+  if (path.match(/^\/investigations\/[^/]+\/unknowns\/[^/]+$/) && method === "DELETE") {
+    if (!authSmartAccess(req, res)) return;
+    const [, , rawCaseId, , rawUnknownId] = path.split("/");
+    const caseId = decodeURIComponent(rawCaseId);
+    const unknownId = decodeURIComponent(rawUnknownId);
+    const before = state.investigationUnknowns.length;
+    state.investigationUnknowns = state.investigationUnknowns.filter(
+      (row) => !(row.case_id === caseId && row.unknown_id === unknownId)
+    );
+    if (state.investigationUnknowns.length === before) {
+      return reply(res, 404, { detail: "not linked" });
+    }
+    reply(res, 200, { success: true });
     return;
   }
 
@@ -723,6 +876,40 @@ const server = createServer(async (req, res) => {
     investigation.status = "OPEN";
     investigation.closed_by = null;
     investigation.closed_at = null;
+    reply(res, 200, { success: true });
+    return;
+  }
+
+  // Target alerts — mirrors alerts_service.py: a poll queue of
+  // unacknowledged TARGET_ALERT access_logs rows.
+  if (path === "/alerts/pending" && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const pending = state.accessLogs
+      .filter((log) => log.decision === "TARGET_ALERT" && !log.alert_acknowledged)
+      .map((log) => {
+        const target = state.watchlist.find((t) => t.target_id === log.person_identifier);
+        return {
+          ...log,
+          full_name: target ? target.full_name : null,
+          reason: target ? target.reason : null,
+        };
+      })
+      .sort((a, b) => (a.timestamp < b.timestamp ? 1 : a.timestamp > b.timestamp ? -1 : b.id - a.id));
+    reply(res, 200, pending);
+    return;
+  }
+
+  if (path.match(/^\/alerts\/[^/]+\/acknowledge$/) && method === "PATCH") {
+    const user = authSmartAccess(req, res);
+    if (!user) return;
+    const alertId = Number(decodeURIComponent(path.split("/")[2]));
+    const log = state.accessLogs.find(
+      (entry) => entry.id === alertId && entry.decision === "TARGET_ALERT" && !entry.alert_acknowledged
+    );
+    if (!log) return reply(res, 404, { detail: "No pending alert with that id" });
+    log.alert_acknowledged = true;
+    log.alert_acknowledged_by = user.username;
+    log.alert_acknowledged_at = "2026-09-13T00:00:00";
     reply(res, 200, { success: true });
     return;
   }

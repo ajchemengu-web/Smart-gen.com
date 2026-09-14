@@ -63,20 +63,27 @@ you so rather than showing a dashboard.
   and derives their name automatically, or by name if not; once the
   target has an embedding, every live sighting at a checkpoint is
   logged automatically — a target flag overrides normal admission,
-  even for an otherwise-legitimate member), **investigations**
-  (lightweight case files, optionally linked to one target, with an
-  append-only note timeline), and **scene reconstruction** (pick a
-  location and a time window and see every face the recognition
-  pipeline actually logged there during it — each distinct person
-  with their first/last-seen time and sighting count, plus who else
-  was seen nearby in time at that same location (co-occurrence, a
-  5-minute window by default, adjustable per query — candidate
-  witnesses/associates), plus the raw sighting timeline; a person's
-  sighting summary can be attached straight into an open case's note
-  timeline). A checkpoint camera's own registered location (Camera
-  Management, below) is what a sighting's location is drawn from
-  once the guard device identifies which camera it's posting from.
-  Both the Guard and
+  even for an otherwise-legitimate member — plus a per-location
+  **sighting frequency** view, highest count first), **target
+  alerts** (every unacknowledged live sighting in one queue that
+  polls every 15s — there's no push/email/SMS infrastructure yet,
+  so acknowledging is what actually clears one), **investigations**
+  (case files with a status OPEN/CLOSED, a **severity**
+  LOW/MEDIUM/HIGH/CRITICAL, an **assignee**, an append-only note
+  timeline, one primary linked target plus the ability to link more
+  targets and unknown_persons sightings directly, and a **print
+  report** button that opens a formatted summary in a new tab), and
+  **scene reconstruction** (pick a location and a time window and
+  see every face the recognition pipeline actually logged there
+  during it — each distinct person with their first/last-seen time
+  and sighting count, plus who else was seen nearby in time at that
+  same location (co-occurrence, a 5-minute window by default,
+  adjustable per query — candidate witnesses/associates), plus the
+  raw sighting timeline; a person's sighting summary can be attached
+  straight into an open case's note timeline). A checkpoint camera's
+  own registered location (Camera Management, below) is what a
+  sighting's location is drawn from once the guard device identifies
+  which camera it's posting from. Both the Guard and
   Admin dashboards' access log
   (`src/components/AccessLogTable.tsx`) let a Guard or Admin flag a
   VERIFIED entry as a false positive after determining, outside this

@@ -75,7 +75,7 @@ test("register a target, track its status, then open and work a linked case", as
   await expect(caseBadge()).toHaveText("OPEN");
 
   // Notes — add one and see it appear.
-  await page.locator("button", { hasText: "View notes" }).click();
+  await page.locator("button", { hasText: "View details" }).click();
   await expect(page.getByText("No notes yet.")).toBeVisible();
 
   await page.fill('input[placeholder="Add a note…"]', "Reviewed camera footage.");
@@ -261,7 +261,7 @@ test("scene reconstruction maps faces to a location + time window and attaches a
   await expect(aliceCard.getByRole("button", { name: "Added" })).toBeVisible();
 
   // The note actually landed on the case's own timeline.
-  await page.locator("button", { hasText: "View notes" }).click();
+  await page.locator("button", { hasText: "View details" }).click();
   await expect(
     page.getByText("Scene reconstruction: Alice Wanjiru", { exact: false })
   ).toBeVisible();

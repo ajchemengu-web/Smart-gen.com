@@ -669,6 +669,53 @@ export function reactivateWatchlistTarget(targetId: string, token: string) {
   );
 }
 
+export type SightingFrequencyEntry = {
+  entrance: string;
+  count: number;
+};
+
+export function getWatchlistFrequency(targetId: string, token: string) {
+  return request<SightingFrequencyEntry[]>(
+    `/watchlist/${encodeURIComponent(targetId)}/frequency`,
+    undefined,
+    token
+  );
+}
+
+// ============================================================
+// SMARTACCESS: TARGET ALERTS (docs/PRD.md §6.3a, §8)
+// ============================================================
+//
+// A poll queue of unacknowledged TARGET_ALERT sightings — see
+// Alternative_Identifier's alerts_service.py for why this is a poll
+// queue rather than an outbound push/email/SMS notification (no such
+// infrastructure/credentials exist yet).
+
+export type PendingAlert = {
+  id: number;
+  person_type: string;
+  person_identifier: string | null;
+  full_name: string | null;
+  reason: string | null;
+  entrance: string | null;
+  recognition_score: number | null;
+  decision: string | null;
+  liveness_score: number | null;
+  timestamp: string;
+};
+
+export function getPendingAlerts(token: string) {
+  return request<PendingAlert[]>("/alerts/pending", undefined, token);
+}
+
+export function acknowledgeAlert(accessLogId: number, token: string) {
+  return request(
+    `/alerts/${accessLogId}/acknowledge`,
+    { method: "PATCH" },
+    token
+  );
+}
+
 // ============================================================
 // SMARTACCESS: INVESTIGATIONS (docs/PRD.md §6.3a, §8)
 // ============================================================
@@ -685,20 +732,38 @@ export type InvestigationNote = {
   created_at: string;
 };
 
+export type InvestigationSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
 export type Investigation = {
   case_id: string;
   title: string;
   description: string | null;
   target_id: string | null;
   status: string;
+  severity: InvestigationSeverity;
+  assigned_to: string | null;
   opened_by: string | null;
   opened_at: string;
   closed_by: string | null;
   closed_at: string | null;
 };
 
+export type LinkedTarget = {
+  target_id: string;
+  full_name: string | null;
+  status: string | null;
+};
+
+export type LinkedUnknown = {
+  unknown_id: string;
+  status: string | null;
+  detected_at: string | null;
+};
+
 export type InvestigationWithNotes = Investigation & {
   notes: InvestigationNote[];
+  linked_targets: LinkedTarget[];
+  linked_unknowns: LinkedUnknown[];
 };
 
 export function getInvestigations(token: string, status?: string) {
@@ -707,16 +772,99 @@ export function getInvestigations(token: string, status?: string) {
 }
 
 export function createInvestigation(
-  fields: { title: string; description?: string; target_id?: string },
+  fields: {
+    title: string;
+    description?: string;
+    target_id?: string;
+    severity?: InvestigationSeverity;
+    assigned_to?: string;
+  },
   token: string
 ) {
   return postJson<InvestigationWithNotes>("/investigations", fields, token);
+}
+
+export function updateInvestigation(
+  caseId: string,
+  fields: {
+    title?: string;
+    description?: string;
+    severity?: InvestigationSeverity;
+    assigned_to?: string;
+  },
+  token: string
+) {
+  return request<InvestigationWithNotes>(
+    `/investigations/${encodeURIComponent(caseId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    },
+    token
+  );
 }
 
 export function getInvestigation(caseId: string, token: string) {
   return request<InvestigationWithNotes>(
     `/investigations/${encodeURIComponent(caseId)}`,
     undefined,
+    token
+  );
+}
+
+export function linkInvestigationTarget(
+  caseId: string,
+  targetId: string,
+  token: string
+) {
+  return request<InvestigationWithNotes>(
+    `/investigations/${encodeURIComponent(caseId)}/targets`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_id: targetId }),
+    },
+    token
+  );
+}
+
+export function unlinkInvestigationTarget(
+  caseId: string,
+  targetId: string,
+  token: string
+) {
+  return request(
+    `/investigations/${encodeURIComponent(caseId)}/targets/${encodeURIComponent(targetId)}`,
+    { method: "DELETE" },
+    token
+  );
+}
+
+export function linkInvestigationUnknown(
+  caseId: string,
+  unknownId: string,
+  token: string
+) {
+  return request<InvestigationWithNotes>(
+    `/investigations/${encodeURIComponent(caseId)}/unknowns`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unknown_id: unknownId }),
+    },
+    token
+  );
+}
+
+export function unlinkInvestigationUnknown(
+  caseId: string,
+  unknownId: string,
+  token: string
+) {
+  return request(
+    `/investigations/${encodeURIComponent(caseId)}/unknowns/${encodeURIComponent(unknownId)}`,
+    { method: "DELETE" },
     token
   );
 }
