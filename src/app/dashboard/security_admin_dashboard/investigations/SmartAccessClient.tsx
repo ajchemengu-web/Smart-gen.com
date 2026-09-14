@@ -21,6 +21,15 @@ function caseBadgeClass(status: string) {
   return status === "OPEN" ? styles.badgeOpen : styles.badgeClosed;
 }
 
+function formatGap(seconds: number) {
+  if (seconds < 60) return `${seconds}s apart`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return remainder === 0
+    ? `${minutes}m apart`
+    : `${minutes}m ${remainder}s apart`;
+}
+
 export default function SmartAccessClient() {
   const [targets, setTargets] = useState<WatchlistTarget[]>([]);
   const [targetStatusFilter, setTargetStatusFilter] = useState("");
@@ -48,6 +57,7 @@ export default function SmartAccessClient() {
   const [sceneLocation, setSceneLocation] = useState("");
   const [sceneStart, setSceneStart] = useState("");
   const [sceneEnd, setSceneEnd] = useState("");
+  const [sceneWindowMinutes, setSceneWindowMinutes] = useState("5");
   const [sceneResult, setSceneResult] = useState<SceneResult | null>(null);
   const [sceneLoading, setSceneLoading] = useState(false);
   const [sceneError, setSceneError] = useState<string | null>(null);
@@ -330,6 +340,10 @@ export default function SmartAccessClient() {
     if (sceneLocation.trim()) params.set("location", sceneLocation.trim());
     if (sceneStart) params.set("start_time", sceneStart);
     if (sceneEnd) params.set("end_time", sceneEnd);
+    const windowMinutes = Number(sceneWindowMinutes);
+    if (Number.isFinite(windowMinutes) && windowMinutes > 0) {
+      params.set("co_occurrence_minutes", String(windowMinutes));
+    }
 
     try {
       const response = await fetch(`/api/scene/query?${params.toString()}`, {
@@ -660,6 +674,15 @@ export default function SmartAccessClient() {
               onChange={(event) => setSceneEnd(event.target.value)}
             />
           </label>
+          <label className={styles.field}>
+            <span>Co-occurrence window (min)</span>
+            <input
+              type="number"
+              min="1"
+              value={sceneWindowMinutes}
+              onChange={(event) => setSceneWindowMinutes(event.target.value)}
+            />
+          </label>
           <div className={styles.submitRow}>
             <button type="submit" disabled={sceneLoading} className={styles.submit}>
               {sceneLoading ? "Searching…" : "Search scene"}
@@ -669,6 +692,14 @@ export default function SmartAccessClient() {
 
         {sceneResult && (
           <>
+            {sceneResult.people.length > 0 && (
+              <p className={styles.helpText}>
+                &quot;Also seen nearby&quot; below means within{" "}
+                {sceneResult.co_occurrence_minutes} minute
+                {sceneResult.co_occurrence_minutes === 1 ? "" : "s"} of that
+                person&apos;s own sighting.
+              </p>
+            )}
             {sceneResult.people.length === 0 ? (
               <p className={styles.helpText}>
                 No faces were recognized at that location/time window.
@@ -679,7 +710,11 @@ export default function SmartAccessClient() {
                 const added = addedSightingKeys.has(key);
 
                 return (
-                  <div key={key} className={styles.card}>
+                  <div
+                    key={key}
+                    data-testid={`scene-person-${key}`}
+                    className={styles.card}
+                  >
                     <div className={styles.cardHeader}>
                       <h3>
                         {person.full_name ?? person.person_identifier}
@@ -693,6 +728,17 @@ export default function SmartAccessClient() {
                       {person.sighting_count}x · first {person.first_seen} ·
                       last {person.last_seen}
                     </p>
+                    {person.co_occurring.length > 0 && (
+                      <p className={styles.cardMeta}>
+                        Also seen nearby:{" "}
+                        {person.co_occurring
+                          .map(
+                            (partner) =>
+                              `${partner.full_name ?? partner.person_identifier} (${partner.person_type}, ${formatGap(partner.closest_gap_seconds)})`
+                          )
+                          .join(", ")}
+                      </p>
+                    )}
                     <div className={styles.noteForm}>
                       <select
                         aria-label="Add sighting to case"

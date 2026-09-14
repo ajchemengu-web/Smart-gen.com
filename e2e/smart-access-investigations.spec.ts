@@ -145,6 +145,21 @@ test("scene reconstruction maps faces to a location + time window and attaches a
           admission_number: "AD001",
         },
       ],
+      watchlist: [
+        {
+          target_id: "TGT-0001",
+          full_name: "Person Of Interest",
+          description: null,
+          reason: null,
+          status: "ACTIVE",
+          embedding_file: "TGT-0001.npy",
+          linked_student_id: null,
+          created_by: "security1",
+          created_at: "2026-09-14T00:00:00",
+          resolved_by: null,
+          resolved_at: null,
+        },
+      ],
       accessLogs: [
         {
           id: 101,
@@ -160,7 +175,22 @@ test("scene reconstruction maps faces to a location + time window and attaches a
           timestamp: "2026-09-14T09:00:00",
         },
         {
+          // Exactly 5 minutes from both S1 sightings either side —
+          // the default co-occurrence window's own boundary.
           id: 102,
+          person_type: "TARGET",
+          person_identifier: "TGT-0001",
+          entrance: "Library Entrance",
+          recognition_score: 0.85,
+          liveness_score: 0.75,
+          decision: "TARGET_ALERT",
+          guard_id: null,
+          false_positive: false,
+          false_positive_reason: null,
+          timestamp: "2026-09-14T09:05:00",
+        },
+        {
+          id: 103,
           person_type: "STUDENT",
           person_identifier: "S1",
           entrance: "Library Entrance",
@@ -174,7 +204,7 @@ test("scene reconstruction maps faces to a location + time window and attaches a
         },
         {
           // Outside the queried window below — must not show up.
-          id: 103,
+          id: 104,
           person_type: "STUDENT",
           person_identifier: "S1",
           entrance: "Library Entrance",
@@ -211,10 +241,24 @@ test("scene reconstruction maps faces to a location + time window and attaches a
   // per-person summary and the raw sighting timeline.
   await expect(page.getByText("2026-09-14T20:00:00")).toHaveCount(0);
 
-  // Attach Alice's sighting summary to the case just opened.
-  await page.getByLabel("Add sighting to case").selectOption("CASE-0001");
-  await page.locator("button", { hasText: "Add" }).last().click();
-  await expect(page.locator("button", { hasText: "Added" })).toBeVisible();
+  // Co-occurrence: TGT-0001 sits exactly 5 minutes (the default
+  // window) from S1's sightings on both sides, so each card lists
+  // the other as "also seen nearby".
+  const aliceCard = page.getByTestId("scene-person-STUDENT:S1");
+  const targetCard = page.getByTestId("scene-person-TARGET:TGT-0001");
+  await expect(aliceCard).toContainText("Also seen nearby");
+  await expect(aliceCard).toContainText("Person Of Interest");
+  await expect(aliceCard).toContainText("5m apart");
+  await expect(targetCard).toContainText("Also seen nearby");
+  await expect(targetCard).toContainText("Alice Wanjiru");
+
+  // Attach Alice's sighting summary to the case just opened —
+  // scoped to Alice's own card so it doesn't hit the target's.
+  await aliceCard
+    .getByLabel("Add sighting to case")
+    .selectOption("CASE-0001");
+  await aliceCard.getByRole("button", { name: "Add" }).click();
+  await expect(aliceCard.getByRole("button", { name: "Added" })).toBeVisible();
 
   // The note actually landed on the case's own timeline.
   await page.locator("button", { hasText: "View notes" }).click();

@@ -744,6 +744,13 @@ const server = createServer(async (req, res) => {
     const location = url.searchParams.get("location");
     const startTime = url.searchParams.get("start_time");
     const endTime = url.searchParams.get("end_time");
+    const coOccurrenceMinutesParam = url.searchParams.get(
+      "co_occurrence_minutes"
+    );
+    const coOccurrenceMinutes =
+      Number(coOccurrenceMinutesParam) > 0
+        ? Number(coOccurrenceMinutesParam)
+        : 5;
 
     const resolveName = (personType, personIdentifier) => {
       if (personType === "STUDENT") {
@@ -791,10 +798,56 @@ const server = createServer(async (req, res) => {
       person.sighting_count += 1;
     }
 
+    // Co-occurrence: who else was logged at this same location within
+    // `coOccurrenceMinutes` of one of this person's own sightings —
+    // mirrors Alternative_Identifier's scene_service.py.
+    const windowMs = coOccurrenceMinutes * 60 * 1000;
+    const bestGapByKey = new Map(
+      [...peopleByKey.keys()].map((key) => [key, new Map()])
+    );
+    for (let i = 0; i < sightings.length; i++) {
+      const a = sightings[i];
+      const timeA = new Date(a.timestamp).getTime();
+      if (Number.isNaN(timeA)) continue;
+      const keyA = `${a.person_type}:${a.person_identifier}`;
+      for (let j = i + 1; j < sightings.length; j++) {
+        const b = sightings[j];
+        const timeB = new Date(b.timestamp).getTime();
+        if (Number.isNaN(timeB)) continue;
+        const keyB = `${b.person_type}:${b.person_identifier}`;
+        if (keyA === keyB) continue;
+        const gapMs = Math.abs(timeA - timeB);
+        if (gapMs > windowMs) continue;
+        for (const [first, second] of [
+          [keyA, keyB],
+          [keyB, keyA],
+        ]) {
+          const existing = bestGapByKey.get(first).get(second);
+          if (existing === undefined || gapMs < existing) {
+            bestGapByKey.get(first).set(second, gapMs);
+          }
+        }
+      }
+    }
+    for (const [key, person] of peopleByKey) {
+      person.co_occurring = [...bestGapByKey.get(key).entries()]
+        .sort((a, b) => a[1] - b[1])
+        .map(([otherKey, gapMs]) => {
+          const other = peopleByKey.get(otherKey);
+          return {
+            person_type: other.person_type,
+            person_identifier: other.person_identifier,
+            full_name: other.full_name,
+            closest_gap_seconds: Math.round(gapMs / 1000),
+          };
+        });
+    }
+
     reply(res, 200, {
       location: location || null,
       start_time: startTime || null,
       end_time: endTime || null,
+      co_occurrence_minutes: coOccurrenceMinutes,
       people: [...peopleByKey.values()],
       sightings,
     });

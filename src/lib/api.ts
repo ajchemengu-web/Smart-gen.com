@@ -766,6 +766,13 @@ export function reopenInvestigation(caseId: string, token: string) {
 // scene's findings get attached to a case via the existing
 // investigation note timeline above, not a separate link.
 
+export type SceneCoOccurrence = {
+  person_type: string;
+  person_identifier: string;
+  full_name: string | null;
+  closest_gap_seconds: number;
+};
+
 export type ScenePerson = {
   person_type: string;
   person_identifier: string;
@@ -773,6 +780,7 @@ export type ScenePerson = {
   first_seen: string;
   last_seen: string;
   sighting_count: number;
+  co_occurring: SceneCoOccurrence[];
 };
 
 export type SceneSighting = {
@@ -791,6 +799,7 @@ export type SceneResult = {
   location: string | null;
   start_time: string | null;
   end_time: string | null;
+  co_occurrence_minutes: number;
   people: ScenePerson[];
   sightings: SceneSighting[];
 };
@@ -800,13 +809,20 @@ export function getSceneLocations(token: string) {
 }
 
 export function querySceneReconstruction(
-  filters: { location?: string; startTime?: string; endTime?: string },
+  filters: {
+    location?: string;
+    startTime?: string;
+    endTime?: string;
+    coOccurrenceMinutes?: number;
+  },
   token: string
 ) {
   const params = new URLSearchParams();
   if (filters.location) params.set("location", filters.location);
   if (filters.startTime) params.set("start_time", filters.startTime);
   if (filters.endTime) params.set("end_time", filters.endTime);
+  if (filters.coOccurrenceMinutes != null)
+    params.set("co_occurrence_minutes", String(filters.coOccurrenceMinutes));
   const query = params.toString();
 
   return request<SceneResult>(

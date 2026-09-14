@@ -68,12 +68,15 @@ you so rather than showing a dashboard.
   append-only note timeline), and **scene reconstruction** (pick a
   location and a time window and see every face the recognition
   pipeline actually logged there during it — each distinct person
-  with their first/last-seen time and sighting count, plus the raw
-  timeline; a person's sighting summary can be attached straight into
-  an open case's note timeline). A checkpoint camera's own registered
-  location (Camera Management, below) is what a sighting's location
-  is drawn from once the guard device identifies which camera it's
-  posting from. Both the Guard and
+  with their first/last-seen time and sighting count, plus who else
+  was seen nearby in time at that same location (co-occurrence, a
+  5-minute window by default, adjustable per query — candidate
+  witnesses/associates), plus the raw sighting timeline; a person's
+  sighting summary can be attached straight into an open case's note
+  timeline). A checkpoint camera's own registered location (Camera
+  Management, below) is what a sighting's location is drawn from
+  once the guard device identifies which camera it's posting from.
+  Both the Guard and
   Admin dashboards' access log
   (`src/components/AccessLogTable.tsx`) let a Guard or Admin flag a
   VERIFIED entry as a false positive after determining, outside this
