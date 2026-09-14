@@ -132,3 +132,93 @@ test("registering a target by admission number derives their name and links the 
     })
   ).toBeVisible();
 });
+
+test("scene reconstruction maps faces to a location + time window and attaches a sighting to a case", async ({ page }) => {
+  await fetch("http://localhost:8000/__seed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      students: [
+        {
+          student_id: "S1",
+          full_name: "Alice Wanjiru",
+          admission_number: "AD001",
+        },
+      ],
+      accessLogs: [
+        {
+          id: 101,
+          person_type: "STUDENT",
+          person_identifier: "S1",
+          entrance: "Library Entrance",
+          recognition_score: 0.9,
+          liveness_score: 0.8,
+          decision: "VERIFIED",
+          guard_id: null,
+          false_positive: false,
+          false_positive_reason: null,
+          timestamp: "2026-09-14T09:00:00",
+        },
+        {
+          id: 102,
+          person_type: "STUDENT",
+          person_identifier: "S1",
+          entrance: "Library Entrance",
+          recognition_score: 0.9,
+          liveness_score: 0.8,
+          decision: "VERIFIED",
+          guard_id: null,
+          false_positive: false,
+          false_positive_reason: null,
+          timestamp: "2026-09-14T09:10:00",
+        },
+        {
+          // Outside the queried window below — must not show up.
+          id: 103,
+          person_type: "STUDENT",
+          person_identifier: "S1",
+          entrance: "Library Entrance",
+          recognition_score: 0.9,
+          liveness_score: 0.8,
+          decision: "VERIFIED",
+          guard_id: null,
+          false_positive: false,
+          false_positive_reason: null,
+          timestamp: "2026-09-14T20:00:00",
+        },
+      ],
+    }),
+  });
+  await page.reload();
+  await page.waitForSelector("text=Scene reconstruction", { timeout: 10000 });
+
+  // Open a case first, so the scene result has somewhere to attach to.
+  await page.fill('input[name="title"]', "Library incident");
+  await page.locator("button", { hasText: "Open case" }).click();
+  await page.waitForSelector("text=Library incident", { timeout: 10000 });
+
+  await page.getByLabel("Location", { exact: true }).fill("Library Entrance");
+  await page.getByLabel("From", { exact: true }).fill("2026-09-14T08:00");
+  await page.getByLabel("To", { exact: true }).fill("2026-09-14T10:00");
+  await page.locator("button", { hasText: "Search scene" }).click();
+
+  await expect(page.locator("h3", { hasText: "Alice Wanjiru" })).toBeVisible();
+  await expect(
+    page.locator("p", { hasText: "seen 2x" })
+  ).toBeVisible();
+
+  // The out-of-window sighting (20:00) is excluded from both the
+  // per-person summary and the raw sighting timeline.
+  await expect(page.getByText("2026-09-14T20:00:00")).toHaveCount(0);
+
+  // Attach Alice's sighting summary to the case just opened.
+  await page.getByLabel("Add sighting to case").selectOption("CASE-0001");
+  await page.locator("button", { hasText: "Add" }).last().click();
+  await expect(page.locator("button", { hasText: "Added" })).toBeVisible();
+
+  // The note actually landed on the case's own timeline.
+  await page.locator("button", { hasText: "View notes" }).click();
+  await expect(
+    page.getByText("Scene reconstruction: Alice Wanjiru", { exact: false })
+  ).toBeVisible();
+});

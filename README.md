@@ -63,9 +63,17 @@ you so rather than showing a dashboard.
   and derives their name automatically, or by name if not; once the
   target has an embedding, every live sighting at a checkpoint is
   logged automatically — a target flag overrides normal admission,
-  even for an otherwise-legitimate member) and **investigations**
+  even for an otherwise-legitimate member), **investigations**
   (lightweight case files, optionally linked to one target, with an
-  append-only note timeline). Both the Guard and
+  append-only note timeline), and **scene reconstruction** (pick a
+  location and a time window and see every face the recognition
+  pipeline actually logged there during it — each distinct person
+  with their first/last-seen time and sighting count, plus the raw
+  timeline; a person's sighting summary can be attached straight into
+  an open case's note timeline). A checkpoint camera's own registered
+  location (Camera Management, below) is what a sighting's location
+  is drawn from once the guard device identifies which camera it's
+  posting from. Both the Guard and
   Admin dashboards' access log
   (`src/components/AccessLogTable.tsx`) let a Guard or Admin flag a
   VERIFIED entry as a false positive after determining, outside this

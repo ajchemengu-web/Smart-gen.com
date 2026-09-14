@@ -169,6 +169,11 @@
   color: #7fd3a3;
 }
 
+.badgeNeutral {
+  background: rgba(154, 162, 177, 0.15);
+  color: #9aa2b1;
+}
+
 .notesList {
   list-style: none;
   margin: 0.8rem 0 0;
@@ -196,7 +201,8 @@
   margin-top: 0.8rem;
 }
 
-.noteForm input {
+.noteForm input,
+.noteForm select {
   flex: 1;
   background: #0b0d12;
   border: 1px solid #2c313b;

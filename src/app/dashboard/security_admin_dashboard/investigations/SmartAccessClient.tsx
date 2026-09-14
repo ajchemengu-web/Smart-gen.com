@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import type {
   Investigation,
   InvestigationWithNotes,
+  ScenePerson,
+  SceneResult,
   WatchlistSighting,
   WatchlistTarget,
 } from "@/lib/api";
@@ -40,6 +43,23 @@ export default function SmartAccessClient() {
   const [busyCaseId, setBusyCaseId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+
+  const [sceneLocations, setSceneLocations] = useState<string[]>([]);
+  const [sceneLocation, setSceneLocation] = useState("");
+  const [sceneStart, setSceneStart] = useState("");
+  const [sceneEnd, setSceneEnd] = useState("");
+  const [sceneResult, setSceneResult] = useState<SceneResult | null>(null);
+  const [sceneLoading, setSceneLoading] = useState(false);
+  const [sceneError, setSceneError] = useState<string | null>(null);
+  const [sceneCaseChoice, setSceneCaseChoice] = useState<
+    Record<string, string>
+  >({});
+  const [addingSightingKey, setAddingSightingKey] = useState<string | null>(
+    null
+  );
+  const [addedSightingKeys, setAddedSightingKeys] = useState<Set<string>>(
+    new Set()
+  );
 
   // `silent` skips touching targetError/caseError entirely — used
   // when refreshing the list after a create/resolve/close/etc.
@@ -104,9 +124,28 @@ export default function SmartAccessClient() {
     }
   }
 
+  async function loadSceneLocations() {
+    try {
+      const response = await fetch("/api/scene/locations", {
+        cache: "no-store",
+      });
+
+      if (response.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+
+      if (response.ok) setSceneLocations(await response.json());
+    } catch {
+      // Locations are just a picker convenience — a free-text
+      // location can still be typed, so a failure here isn't fatal.
+    }
+  }
+
   useEffect(() => {
     loadWatchlist();
     loadInvestigations();
+    loadSceneLocations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -277,6 +316,76 @@ export default function SmartAccessClient() {
     } finally {
       setBusyCaseId(null);
       loadInvestigations(undefined, { silent: true });
+    }
+  }
+
+  async function handleQueryScene(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setSceneLoading(true);
+    setSceneError(null);
+    setAddedSightingKeys(new Set());
+
+    const params = new URLSearchParams();
+    if (sceneLocation.trim()) params.set("location", sceneLocation.trim());
+    if (sceneStart) params.set("start_time", sceneStart);
+    if (sceneEnd) params.set("end_time", sceneEnd);
+
+    try {
+      const response = await fetch(`/api/scene/query?${params.toString()}`, {
+        cache: "no-store",
+      });
+
+      if (response.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        setSceneError("Backend returned an error.");
+        return;
+      }
+
+      setSceneResult(await response.json());
+    } catch {
+      setSceneError("Could not reach the backend.");
+    } finally {
+      setSceneLoading(false);
+    }
+  }
+
+  async function handleAddSightingToCase(person: ScenePerson) {
+    const key = `${person.person_type}:${person.person_identifier}`;
+    const caseId = sceneCaseChoice[key];
+    if (!caseId) return;
+
+    setAddingSightingKey(key);
+
+    const who = person.full_name ?? person.person_identifier;
+    const where = sceneResult?.location ?? "the queried location";
+    const note =
+      `Scene reconstruction: ${who} (${person.person_type}) seen ` +
+      `${person.sighting_count}x at ${where}, between ` +
+      `${person.first_seen} and ${person.last_seen}.`;
+
+    try {
+      const response = await fetch(
+        `/api/investigations/${encodeURIComponent(caseId)}/notes`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ note }),
+        }
+      );
+
+      if (response.ok) {
+        setAddedSightingKeys((previous) => new Set(previous).add(key));
+        if (expandedCase?.case_id === caseId) {
+          setExpandedCase(await response.json());
+        }
+      }
+    } finally {
+      setAddingSightingKey(null);
     }
   }
 
@@ -505,6 +614,139 @@ export default function SmartAccessClient() {
               )}
             </div>
           ))
+        )}
+      </section>
+
+      <section className={styles.section}>
+        <h2>Scene reconstruction</h2>
+        {sceneError && <p className={styles.banner}>{sceneError}</p>}
+        <p className={styles.helpText}>
+          Pick a location and a time window to see every face the
+          recognition pipeline actually logged there during it — who was
+          at this scene, and when. Attach a person&apos;s sighting summary
+          to an open case below to record it in that case&apos;s note
+          timeline.
+        </p>
+
+        <form onSubmit={handleQueryScene} className={styles.form}>
+          <label className={styles.field}>
+            <span>Location</span>
+            <input
+              name="location"
+              list="scene-location-options"
+              placeholder="e.g. Library Entrance"
+              value={sceneLocation}
+              onChange={(event) => setSceneLocation(event.target.value)}
+            />
+            <datalist id="scene-location-options">
+              {sceneLocations.map((location) => (
+                <option key={location} value={location} />
+              ))}
+            </datalist>
+          </label>
+          <label className={styles.field}>
+            <span>From</span>
+            <input
+              type="datetime-local"
+              value={sceneStart}
+              onChange={(event) => setSceneStart(event.target.value)}
+            />
+          </label>
+          <label className={styles.field}>
+            <span>To</span>
+            <input
+              type="datetime-local"
+              value={sceneEnd}
+              onChange={(event) => setSceneEnd(event.target.value)}
+            />
+          </label>
+          <div className={styles.submitRow}>
+            <button type="submit" disabled={sceneLoading} className={styles.submit}>
+              {sceneLoading ? "Searching…" : "Search scene"}
+            </button>
+          </div>
+        </form>
+
+        {sceneResult && (
+          <>
+            {sceneResult.people.length === 0 ? (
+              <p className={styles.helpText}>
+                No faces were recognized at that location/time window.
+              </p>
+            ) : (
+              sceneResult.people.map((person) => {
+                const key = `${person.person_type}:${person.person_identifier}`;
+                const added = addedSightingKeys.has(key);
+
+                return (
+                  <div key={key} className={styles.card}>
+                    <div className={styles.cardHeader}>
+                      <h3>
+                        {person.full_name ?? person.person_identifier}
+                      </h3>
+                      <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                        {person.person_type}
+                      </span>
+                    </div>
+                    <p className={styles.cardMeta}>
+                      {person.person_identifier} · seen{" "}
+                      {person.sighting_count}x · first {person.first_seen} ·
+                      last {person.last_seen}
+                    </p>
+                    <div className={styles.noteForm}>
+                      <select
+                        aria-label="Add sighting to case"
+                        value={sceneCaseChoice[key] ?? ""}
+                        onChange={(event) =>
+                          setSceneCaseChoice((previous) => ({
+                            ...previous,
+                            [key]: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Add to case…</option>
+                        {cases.map((investigation) => (
+                          <option
+                            key={investigation.case_id}
+                            value={investigation.case_id}
+                          >
+                            {investigation.case_id} — {investigation.title}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={
+                          !sceneCaseChoice[key] || addingSightingKey === key
+                        }
+                        onClick={() => handleAddSightingToCase(person)}
+                        className={styles.actionButton}
+                      >
+                        {added
+                          ? "Added"
+                          : addingSightingKey === key
+                            ? "Adding…"
+                            : "Add"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {sceneResult.sightings.length > 0 && (
+              <ul className={styles.sightingsList}>
+                {sceneResult.sightings.map((sighting) => (
+                  <li key={sighting.id}>
+                    {sighting.timestamp} ·{" "}
+                    {sighting.full_name ?? sighting.person_identifier ?? "Unknown"}
+                    {` (${sighting.person_type})`}
+                    {sighting.decision ? ` · ${sighting.decision}` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </section>
     </div>

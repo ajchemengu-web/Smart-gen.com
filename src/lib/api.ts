@@ -754,6 +754,69 @@ export function reopenInvestigation(caseId: string, token: string) {
 }
 
 // ============================================================
+// SMARTACCESS: SCENE RECONSTRUCTION (docs/PRD.md §6.3a, §8)
+// ============================================================
+//
+// Same dashboard/role scope as watchlist/investigations above — pick
+// a location (an access_logs "entrance", which a checkpoint camera's
+// own registered location now populates — see Camera Management)
+// and a time window, and see every face access_logs actually
+// recognized there during it. Built entirely off existing
+// access_logs rows in Alternative_Identifier's scene_service.py; a
+// scene's findings get attached to a case via the existing
+// investigation note timeline above, not a separate link.
+
+export type ScenePerson = {
+  person_type: string;
+  person_identifier: string;
+  full_name: string | null;
+  first_seen: string;
+  last_seen: string;
+  sighting_count: number;
+};
+
+export type SceneSighting = {
+  id: number;
+  person_type: string;
+  person_identifier: string | null;
+  full_name: string | null;
+  entrance: string | null;
+  recognition_score: number | null;
+  decision: string | null;
+  liveness_score: number | null;
+  timestamp: string;
+};
+
+export type SceneResult = {
+  location: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  people: ScenePerson[];
+  sightings: SceneSighting[];
+};
+
+export function getSceneLocations(token: string) {
+  return request<string[]>("/scene/locations", undefined, token);
+}
+
+export function querySceneReconstruction(
+  filters: { location?: string; startTime?: string; endTime?: string },
+  token: string
+) {
+  const params = new URLSearchParams();
+  if (filters.location) params.set("location", filters.location);
+  if (filters.startTime) params.set("start_time", filters.startTime);
+  if (filters.endTime) params.set("end_time", filters.endTime);
+  const query = params.toString();
+
+  return request<SceneResult>(
+    `/scene/query${query ? `?${query}` : ""}`,
+    undefined,
+    token
+  );
+}
+
+// ============================================================
 // ROUTE HANDLER HELPER
 // ============================================================
 //

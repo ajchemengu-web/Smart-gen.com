@@ -727,6 +727,80 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // Scene reconstruction — mirrors scene_service.py: location+time
+  // filtered access_logs, with STUDENT/TARGET identifiers resolved to
+  // a name (GUEST has none in this schema, same as the real backend).
+  if (path === "/scene/locations" && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const locations = [
+      ...new Set(state.accessLogs.map((log) => log.entrance).filter(Boolean)),
+    ].sort();
+    reply(res, 200, locations);
+    return;
+  }
+
+  if (path === "/scene/query" && method === "GET") {
+    if (!authSmartAccess(req, res)) return;
+    const location = url.searchParams.get("location");
+    const startTime = url.searchParams.get("start_time");
+    const endTime = url.searchParams.get("end_time");
+
+    const resolveName = (personType, personIdentifier) => {
+      if (personType === "STUDENT") {
+        const student = state.students.find(
+          (s) => s.student_id === personIdentifier
+        );
+        return student ? student.full_name : null;
+      }
+      if (personType === "TARGET") {
+        const target = state.watchlist.find(
+          (t) => t.target_id === personIdentifier
+        );
+        return target ? target.full_name : null;
+      }
+      return null;
+    };
+
+    let rows = [...state.accessLogs].sort((a, b) =>
+      a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0
+    );
+    if (location) rows = rows.filter((log) => log.entrance === location);
+    if (startTime) rows = rows.filter((log) => log.timestamp >= startTime);
+    if (endTime) rows = rows.filter((log) => log.timestamp <= endTime);
+
+    const sightings = rows.map((log) => ({
+      ...log,
+      full_name: resolveName(log.person_type, log.person_identifier),
+    }));
+
+    const peopleByKey = new Map();
+    for (const sighting of sightings) {
+      const key = `${sighting.person_type}:${sighting.person_identifier}`;
+      if (!peopleByKey.has(key)) {
+        peopleByKey.set(key, {
+          person_type: sighting.person_type,
+          person_identifier: sighting.person_identifier,
+          full_name: sighting.full_name,
+          first_seen: sighting.timestamp,
+          last_seen: sighting.timestamp,
+          sighting_count: 0,
+        });
+      }
+      const person = peopleByKey.get(key);
+      person.last_seen = sighting.timestamp;
+      person.sighting_count += 1;
+    }
+
+    reply(res, 200, {
+      location: location || null,
+      start_time: startTime || null,
+      end_time: endTime || null,
+      people: [...peopleByKey.values()],
+      sightings,
+    });
+    return;
+  }
+
   reply(res, 404, { detail: "not found" });
 });
 
