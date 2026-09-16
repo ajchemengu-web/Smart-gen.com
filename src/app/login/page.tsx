@@ -15,10 +15,6 @@ export default function LoginPage() {
           determines which dashboard you land on.
         </p>
         <LoginForm />
-        <p className={styles.footnote}>
-          Admins can enroll new users (Student, Lecturer, Guard, Staff,
-          or Admin) from their dashboard after signing in.
-        </p>
       </div>
     </main>
   );
