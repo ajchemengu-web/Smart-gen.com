@@ -33,6 +33,11 @@ async function request<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  // Harmless against a normal host; needed when API_BASE_URL is a free
+  // ngrok tunnel, which otherwise serves an HTML interstitial page in
+  // place of the real JSON response on first contact from a given IP.
+  headers.set("ngrok-skip-browser-warning", "true");
+
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       cache: "no-store",
