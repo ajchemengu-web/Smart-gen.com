@@ -33,13 +33,14 @@ test("Analytics section renders breakdowns and a VERIFIED row can be flagged as 
   await page.locator("button", { hasText: "Sign in" }).click();
   await page.waitForURL("**/dashboard/original_admin_dashboard", { timeout: 10000 });
 
-  // Wait for the actual data to arrive (both AdminOverviewClient's
-  // and AnalyticsClient's own fetches), not just the static label
-  // text — that renders immediately, before either fetch resolves.
+  // Wait for AdminOverviewClient's own fetch to resolve, not just
+  // the static label text — that renders immediately, before the
+  // fetch resolves. This is the Overview section (root of the
+  // dashboard); the entrance/movement breakdown lives on the
+  // separate Analytics sub-route now.
   const verifiedRow = page.locator("tr", { hasText: "S1" });
   await expect(verifiedRow).toBeVisible({ timeout: 10000 });
   await expect(verifiedRow.locator("td", { hasText: "VERIFIED" })).toBeVisible();
-  await expect(page.locator("table", { hasText: "Main Gate" }).first()).toBeVisible();
   await verifiedRow.locator("button", { hasText: "Flag false positive" }).click();
   await verifiedRow.locator('input[placeholder="Reason"]').fill("Guard confirmed wrong match on review");
   await verifiedRow.locator("button", { hasText: "Confirm" }).click();
@@ -47,4 +48,9 @@ test("Analytics section renders breakdowns and a VERIFIED row can be flagged as 
 
   const guestRow = page.locator("tr", { hasText: "AG-1" });
   await expect(guestRow.locator("button", { hasText: "Flag false positive" })).toHaveCount(0);
+
+  await page.goto("/dashboard/original_admin_dashboard/analytics");
+  await expect(page.locator("table", { hasText: "Main Gate" }).first()).toBeVisible({
+    timeout: 10000,
+  });
 });

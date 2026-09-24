@@ -5,6 +5,31 @@ test.beforeEach(async () => {
 });
 
 test("a Temporary Admin can enroll a new user from the Enrollment Dashboard", async ({ page }) => {
+  // A GUARD enrollment requires a location matching a registered
+  // checkpoint camera (Alternative_Identifier's auth_service.py) —
+  // the enrollment form's Location dropdown is sourced from GET
+  // /cameras?camera_type=CHECKPOINT, so one must exist to select.
+  await fetch("http://localhost:8000/__seed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      cameras: [
+        {
+          camera_id: "CAM-GATE-1",
+          name: "Main Gate",
+          camera_type: "CHECKPOINT",
+          location: "Main Gate",
+          department: null,
+          source: null,
+          status: "OFFLINE",
+          enabled: true,
+          created_by: "original1",
+          created_at: "2026-09-13T00:00:00",
+        },
+      ],
+    }),
+  });
+
   await page.goto("/login");
   await page.fill('input[name="username"]', "temp1");
   await page.fill('input[name="password"]', "correct");
@@ -19,6 +44,7 @@ test("a Temporary Admin can enroll a new user from the Enrollment Dashboard", as
   await page.fill('input[name="password"]', "temp-pass-123");
   await page.fill('input[name="email"]', "guard2@example.com");
   await page.selectOption('select[name="role"]', "GUARD");
+  await page.selectOption('select[name="location"]', "Main Gate");
   await page.locator("button", { hasText: "Enroll" }).click();
   await page.waitForSelector("text=Created guard2", { timeout: 10000 });
 });

@@ -10,6 +10,7 @@ test("Original Admin has full camera control: create, change status, disable/ena
   await page.fill('input[name="password"]', "correct");
   await page.locator("button", { hasText: "Sign in" }).click();
   await page.waitForURL("**/dashboard/original_admin_dashboard", { timeout: 10000 });
+  await page.goto("/dashboard/original_admin_dashboard/camera-management");
 
   await expect(page.getByText("Add a camera")).toBeVisible();
 
@@ -79,6 +80,7 @@ test("Security Admin can configure/change status but not create or delete a came
   await page.fill('input[name="password"]', "correct");
   await page.locator("button", { hasText: "Sign in" }).click();
   await page.waitForURL("**/dashboard/security_admin_dashboard", { timeout: 10000 });
+  await page.goto("/dashboard/security_admin_dashboard/camera-management");
 
   await expect(page.getByText("Add a camera")).toHaveCount(0);
 

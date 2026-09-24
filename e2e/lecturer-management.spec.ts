@@ -10,6 +10,7 @@ test("Original Admin registers a lecturer profile", async ({ page }) => {
   await page.fill('input[name="password"]', "correct");
   await page.locator("button", { hasText: "Sign in" }).click();
   await page.waitForURL("**/dashboard/original_admin_dashboard", { timeout: 10000 });
+  await page.goto("/dashboard/original_admin_dashboard/lecturers");
 
   await page.waitForSelector("text=Lecturer profiles", { timeout: 10000 });
   await expect(page.getByText("No lecturer profiles yet.")).toBeVisible();
