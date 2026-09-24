@@ -107,6 +107,7 @@ export default function AdminOverviewClient() {
                 <th>Admission #</th>
                 <th>Hostel</th>
                 <th>Room</th>
+                <th>Face</th>
               </tr>
             </thead>
             <tbody>
@@ -117,6 +118,7 @@ export default function AdminOverviewClient() {
                   <td>{student.admission_number}</td>
                   <td>{student.hostel}</td>
                   <td>{student.room}</td>
+                  <td>{student.face_enrolled ? "Enrolled" : "Pending"}</td>
                 </tr>
               ))}
             </tbody>

@@ -235,7 +235,48 @@ const server = createServer(async (req, res) => {
 
   if (path === "/students" && method === "GET") {
     if (!auth(req, res, ["ADMIN"])) return;
-    reply(res, 200, state.students);
+    reply(
+      res,
+      200,
+      state.students.map((s) => ({
+        ...s,
+        face_enrolled: s.embedding_file != null,
+      }))
+    );
+    return;
+  }
+
+  // POST /students — registers just the record, no photo (see
+  // enrollment_service.create_student_record on the real backend).
+  if (path === "/students" && method === "POST") {
+    if (!auth(req, res, ["ADMIN"])) return;
+    const body = await readBody(req);
+    if (
+      state.students.some(
+        (s) =>
+          s.student_id === body.student_id ||
+          s.admission_number === body.admission_number
+      )
+    ) {
+      return reply(res, 400, {
+        detail:
+          "Could not register student — student_id or admission_number may already exist",
+      });
+    }
+    const student = {
+      student_id: body.student_id,
+      full_name: body.full_name,
+      admission_number: body.admission_number,
+      hostel: body.hostel,
+      room: body.room,
+      department: body.department || null,
+      course: body.course || null,
+      year: body.year != null ? Number(body.year) : null,
+      semester: body.semester != null ? Number(body.semester) : null,
+      embedding_file: null,
+    };
+    state.students.push(student);
+    reply(res, 200, { ...student, face_enrolled: false });
     return;
   }
 

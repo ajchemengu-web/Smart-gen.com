@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import EnrollForm from "../../enroll/EnrollForm";
+import StudentRegistrationClient from "@/components/StudentRegistrationClient";
 import StudentFaceEnrollmentClient from "@/components/StudentFaceEnrollmentClient";
 import LogoutButton from "@/components/LogoutButton";
 import shell from "@/components/DashboardShell.module.css";
@@ -58,11 +59,19 @@ export default async function EnrollmentDashboardPage() {
         <div className={formStyles.card}>
           <EnrollForm checkpointLocations={checkpointLocations} />
         </div>
-        <h2>Facial enrollment (Student)</h2>
+        <h2>Register a student</h2>
         <p className={shell.subtitle}>
-          This is what actually creates a student&apos;s recognition record
-          (docs/PRD.md §5) — enrolling their login above does not; a student
-          won&apos;t appear on the Students list until this step also runs.
+          Creates the record only (docs/PRD.md §5) — a student won&apos;t
+          appear on the Students list until a face is attached, either by
+          them self-enrolling from the SmartAttendance app (recommended:
+          live-captured, liveness-checked) or by you directly below.
+        </p>
+        <StudentRegistrationClient />
+
+        <h2>Or, enroll their face yourself</h2>
+        <p className={shell.subtitle}>
+          Uploads photos on the student&apos;s behalf instead of waiting for
+          them to self-enroll — creates the record and the face in one step.
         </p>
         <StudentFaceEnrollmentClient />
       </div>

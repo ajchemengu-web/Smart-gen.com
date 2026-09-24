@@ -24,17 +24,25 @@ test("enrolling a student's face makes them appear on the Students list", async 
     "/dashboard/original_admin_dashboard/facial-enrollment"
   );
 
-  await page.fill('input[name="student_id"]', "STU-001");
-  await page.fill('input[name="full_name"]', "Amina Wanjiru");
-  await page.fill('input[name="admission_number"]', "ADM-2026-001");
-  await page.fill('input[name="hostel"]', "Hostel A");
-  await page.fill('input[name="room"]', "A12");
-  await page.setInputFiles('input[name="photos"]', {
+  // Two forms share these field names now (StudentRegistrationClient
+  // also has student_id/full_name/etc.) — scope to this one via its
+  // unique photos input.
+  const enrollForm = page.locator("form").filter({
+    has: page.locator('input[name="photos"]'),
+  });
+  await enrollForm.locator('input[name="student_id"]').fill("STU-001");
+  await enrollForm.locator('input[name="full_name"]').fill("Amina Wanjiru");
+  await enrollForm
+    .locator('input[name="admission_number"]')
+    .fill("ADM-2026-001");
+  await enrollForm.locator('input[name="hostel"]').fill("Hostel A");
+  await enrollForm.locator('input[name="room"]').fill("A12");
+  await enrollForm.locator('input[name="photos"]').setInputFiles({
     name: "photo.jpg",
     mimeType: "image/jpeg",
     buffer: Buffer.from("fake-jpeg-bytes"),
   });
-  await page.locator("button", { hasText: "Enroll face" }).click();
+  await enrollForm.locator("button", { hasText: "Enroll face" }).click();
 
   await page.waitForSelector("text=Enrolled Amina Wanjiru", {
     timeout: 10000,

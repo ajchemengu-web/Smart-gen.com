@@ -266,6 +266,7 @@ export type Student = {
   admission_number: string;
   hostel: string;
   room: string;
+  face_enrolled: boolean;
 };
 
 export type Guest = {
@@ -278,6 +279,33 @@ export type Guest = {
 
 export function getStudents(token: string) {
   return request<Student[]>("/students", undefined, token);
+}
+
+// Registers just the record (docs/PRD.md §5) — no photo, no
+// embedding. Pairs with the student later self-enrolling their own
+// face from the SmartAttendance app (POST /me/enroll-face there);
+// see StudentFaceEnrollmentClient for the admin-does-it-directly
+// alternative, which still works standalone via
+// POST /enroll/student-face.
+export type StudentRecordResult = Omit<Student, "face_enrolled"> & {
+  face_enrolled: false;
+};
+
+export function createStudent(
+  fields: {
+    student_id: string;
+    full_name: string;
+    admission_number: string;
+    hostel: string;
+    room: string;
+    department?: string;
+    course?: string;
+    year?: number;
+    semester?: number;
+  },
+  token: string
+) {
+  return postJson<StudentRecordResult>("/students", fields, token);
 }
 
 export function getGuests(token: string) {
