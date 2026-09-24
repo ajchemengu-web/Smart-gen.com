@@ -97,9 +97,14 @@ export async function enrollAction(
   const linkedPersonId = String(
     formData.get("linked_person_id") ?? ""
   ).trim();
+  const location = String(formData.get("location") ?? "").trim();
 
   if (!username || !password || !email || !role) {
     return { error: "Username, password, email, and role are required." };
+  }
+
+  if (role === "GUARD" && !location) {
+    return { error: "Guards require a location (checkpoint)." };
   }
 
   const cookieStore = await cookies();
@@ -124,6 +129,7 @@ export async function enrollAction(
         role,
         admin_tier: role === "ADMIN" ? adminTier : undefined,
         linked_person_id: linkedPersonId || undefined,
+        location: role === "GUARD" ? location : undefined,
       },
       session.accessToken
     );

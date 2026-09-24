@@ -14,7 +14,11 @@ const ADMIN_TIERS = [
   "TEMPORARY",
 ] as const;
 
-export default function EnrollForm() {
+export default function EnrollForm({
+  checkpointLocations,
+}: {
+  checkpointLocations: string[];
+}) {
   const [state, action, pending] = useActionState(enrollAction, undefined);
   const [role, setRole] = useState<string>("STUDENT");
 
@@ -63,6 +67,29 @@ export default function EnrollForm() {
               </option>
             ))}
           </select>
+        </label>
+      )}
+
+      {role === "GUARD" && (
+        <label className={styles.field}>
+          <span>Location (checkpoint)</span>
+          {checkpointLocations.length > 0 ? (
+            <select name="location" defaultValue="" required>
+              <option value="" disabled>
+                Select a checkpoint
+              </option>
+              {checkpointLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className={styles.error}>
+              No checkpoint cameras are registered yet — add one in Camera
+              Management before enrolling a Guard.
+            </p>
+          )}
         </label>
       )}
 

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import EnrollForm from "./EnrollForm";
 import { decryptSession, SESSION_COOKIE_NAME } from "@/lib/session";
+import { getCameras } from "@/lib/api";
 import styles from "../form.module.css";
 
 export const metadata = {
@@ -20,6 +21,25 @@ export default async function EnrollPage() {
   // covers defensively rather than crashing on session.dashboard.
   const backHref = session ? `/dashboard/${session.dashboard}` : "/login";
 
+  // A Guard's location must match an actual registered checkpoint
+  // camera, not a free-typed string — sourced from the same registry
+  // the Original/Security Admin's Camera Management screen writes to.
+  let checkpointLocations: string[] = [];
+
+  if (session) {
+    const cameras = await getCameras(session.accessToken, {
+      camera_type: "CHECKPOINT",
+    }).catch(() => []);
+
+    checkpointLocations = [
+      ...new Set(
+        cameras
+          .map((camera) => camera.location)
+          .filter((location): location is string => Boolean(location))
+      ),
+    ];
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.card}>
@@ -30,7 +50,7 @@ export default async function EnrollPage() {
           separately in the recognition engine — this only creates the
           login/dashboard-routing record.
         </p>
-        <EnrollForm />
+        <EnrollForm checkpointLocations={checkpointLocations} />
         <p className={styles.footnote}>
           <Link href={backHref}>Back to dashboard</Link>
         </p>

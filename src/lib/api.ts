@@ -112,6 +112,7 @@ export type EnrollResult = {
   email: string;
   role: string;
   admin_tier: string | null;
+  location: string | null;
   dashboard: string | null;
 };
 
@@ -128,6 +129,7 @@ export function enroll(
     role: string;
     admin_tier?: string;
     linked_person_id?: string;
+    location?: string;
   },
   token: string
 ) {
