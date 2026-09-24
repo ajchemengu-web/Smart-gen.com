@@ -46,9 +46,9 @@ export default async function EnrollPage() {
         <h1>Enrollment</h1>
         <p className={styles.subtitle}>
           Create a login for a Student, Lecturer, Guard, Staff member, or
-          Admin. Facial enrollment for recognition-based roles happens
-          separately in the recognition engine — this only creates the
-          login/dashboard-routing record.
+          Admin. This only creates the login/dashboard-routing record — a
+          Student also needs the separate Facial enrollment step (in the
+          sidebar) before they appear on the Students list.
         </p>
         <EnrollForm checkpointLocations={checkpointLocations} />
         <p className={styles.footnote}>

@@ -18,6 +18,10 @@ const SECTIONS = [
     href: "/dashboard/original_admin_dashboard/lecturers",
     label: "Lecturer profiles",
   },
+  {
+    href: "/dashboard/original_admin_dashboard/facial-enrollment",
+    label: "Facial enrollment",
+  },
 ];
 
 export default function OriginalAdminLayout({

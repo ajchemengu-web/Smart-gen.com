@@ -84,11 +84,15 @@ function postJson<T>(path: string, body: object, token?: string) {
 function postForm<T>(
   path: string,
   fields: Record<string, string | undefined>,
-  token?: string
+  token?: string,
+  files?: { field: string; file: File | Blob; filename?: string }[]
 ) {
   const form = new FormData();
   for (const [key, value] of Object.entries(fields)) {
     if (value !== undefined && value !== "") form.append(key, value);
+  }
+  for (const { field, file, filename } of files ?? []) {
+    form.append(field, file, filename);
   }
 
   return request<T>(path, { method: "POST", body: form }, token);
@@ -134,6 +138,54 @@ export function enroll(
   token: string
 ) {
   return postJson<EnrollResult>("/enroll", fields, token);
+}
+
+// ============================================================
+// STUDENT FACIAL ENROLLMENT (docs/PRD.md §5)
+// ============================================================
+//
+// A separate step from enroll() above — that only creates the login
+// (users table). This is what actually creates the students table
+// row GET /students reads, via one or more reference photos
+// (Alternative_Identifier's enrollment_service.py computes and
+// averages an embedding per usable photo). A STUDENT login with no
+// facial enrollment never appears on the Students list.
+
+export type StudentFaceEnrollResult = {
+  student_id: string;
+  full_name: string;
+  admission_number: string;
+  hostel: string;
+  room: string;
+  department: string | null;
+  course: string | null;
+  year: number | null;
+  semester: number | null;
+  samples_used: number;
+  samples_skipped: number;
+};
+
+export function enrollStudentFace(
+  fields: {
+    student_id: string;
+    full_name: string;
+    admission_number: string;
+    hostel: string;
+    room: string;
+    department?: string;
+    course?: string;
+    year?: string;
+    semester?: string;
+  },
+  photos: File[],
+  token: string
+) {
+  return postForm<StudentFaceEnrollResult>(
+    "/enroll/student-face",
+    fields,
+    token,
+    photos.map((file) => ({ field: "files", file }))
+  );
 }
 
 // ============================================================

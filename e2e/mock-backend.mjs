@@ -239,6 +239,48 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // POST /enroll/student-face — the step that actually creates the
+  // students table row (see enrollment_service.py on the real
+  // backend); doesn't run any real face detection here, just checks
+  // a "files" part was attached, mirroring the real endpoint's "at
+  // least one reference photo is required" check.
+  if (path === "/enroll/student-face" && method === "POST") {
+    if (!auth(req, res, ["ADMIN"])) return;
+    const fields = await readMultipartFields(req);
+    if (!fields.files) {
+      return reply(res, 400, {
+        detail: "At least one reference photo is required.",
+      });
+    }
+    if (
+      state.students.some(
+        (s) =>
+          s.student_id === fields.student_id ||
+          s.admission_number === fields.admission_number
+      )
+    ) {
+      return reply(res, 400, {
+        detail:
+          "Could not enroll student — student_id or admission_number may already exist",
+      });
+    }
+    const student = {
+      student_id: fields.student_id,
+      full_name: fields.full_name,
+      admission_number: fields.admission_number,
+      hostel: fields.hostel,
+      room: fields.room,
+      department: fields.department || null,
+      course: fields.course || null,
+      year: fields.year ? Number(fields.year) : null,
+      semester: fields.semester ? Number(fields.semester) : null,
+      embedding_file: `${fields.student_id}.npy`,
+    };
+    state.students.push(student);
+    reply(res, 200, { ...student, samples_used: 1, samples_skipped: 0 });
+    return;
+  }
+
   if (path === "/guests" && method === "GET") {
     if (!auth(req, res, ["ADMIN"])) return;
     reply(res, 200, state.guests);

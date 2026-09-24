@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import EnrollForm from "../../enroll/EnrollForm";
+import StudentFaceEnrollmentClient from "@/components/StudentFaceEnrollmentClient";
 import LogoutButton from "@/components/LogoutButton";
 import shell from "@/components/DashboardShell.module.css";
 import formStyles from "../../form.module.css";
@@ -50,14 +51,20 @@ export default async function EnrollmentDashboardPage() {
         </div>
         <p className={shell.subtitle}>
           Create a login for a Student, Lecturer, Guard, Staff member, or
-          Admin. Facial enrollment for recognition-based roles happens
-          separately in the recognition engine — this only creates the
-          login/dashboard-routing record. Your access here expires once
-          an Original Admin marks your task complete.
+          Admin, and separately enroll a Student&apos;s face for
+          recognition. Your access here expires once an Original Admin
+          marks your task complete.
         </p>
         <div className={formStyles.card}>
           <EnrollForm checkpointLocations={checkpointLocations} />
         </div>
+        <h2>Facial enrollment (Student)</h2>
+        <p className={shell.subtitle}>
+          This is what actually creates a student&apos;s recognition record
+          (docs/PRD.md §5) — enrolling their login above does not; a student
+          won&apos;t appear on the Students list until this step also runs.
+        </p>
+        <StudentFaceEnrollmentClient />
       </div>
     </main>
   );

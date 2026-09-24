@@ -14,6 +14,10 @@ const SECTIONS = [
     href: "/dashboard/security_admin_dashboard/investigations",
     label: "Target tracking & investigations",
   },
+  {
+    href: "/dashboard/security_admin_dashboard/facial-enrollment",
+    label: "Facial enrollment",
+  },
 ];
 
 export default function SecurityAdminLayout({

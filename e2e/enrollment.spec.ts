@@ -45,7 +45,7 @@ test("a Temporary Admin can enroll a new user from the Enrollment Dashboard", as
   await page.fill('input[name="email"]', "guard2@example.com");
   await page.selectOption('select[name="role"]', "GUARD");
   await page.selectOption('select[name="location"]', "Main Gate");
-  await page.locator("button", { hasText: "Enroll" }).click();
+  await page.getByRole("button", { name: "Enroll", exact: true }).click();
   await page.waitForSelector("text=Created guard2", { timeout: 10000 });
 });
 
