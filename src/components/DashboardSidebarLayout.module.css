@@ -14,16 +14,44 @@
   padding: 1.5rem 1rem;
 }
 
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1.75rem;
+}
+
+.brandMark {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: rgba(79, 124, 255, 0.15);
+  color: #86a9ff;
+}
+
+.brandText {
+  min-width: 0;
+}
+
 .brand {
-  margin: 0 0 0.15rem;
+  margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .roleLabel {
-  margin: 0 0 1.75rem;
+  margin: 0;
   color: #9aa2b1;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav {
@@ -36,10 +64,13 @@
 .navItem {
   display: block;
   padding: 0.55rem 0.75rem;
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
   color: #9aa2b1;
   text-decoration: none;
   font-size: 0.9rem;
+  border: 1px solid transparent;
+  transition: color 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .navItem:hover {
@@ -50,7 +81,7 @@
 .navItemActive {
   color: #e7e9ee;
   background: #171d2e;
-  border: 1px solid #2c3a5e;
+  border-color: #2c3a5e;
 }
 
 .sidebarFooter {
@@ -65,11 +96,12 @@
   background: transparent;
   border: 1px solid #2c313b;
   color: #9aa2b1;
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
   text-decoration: none;
   text-align: center;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .enrollLink:hover {
@@ -85,4 +117,61 @@
 
 .mainContainer {
   max-width: 56rem;
+}
+
+/* A fixed 15rem sidebar eats most of a phone-width viewport, so
+   below this breakpoint it becomes a top bar instead: brand/role on
+   one line, nav items as a horizontally-scrollable pill row, footer
+   actions inline — same content, no JS toggle/drawer needed. */
+@media (max-width: 880px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    border-right: none;
+    border-bottom: 1px solid #1c2029;
+    padding: 1rem 1.25rem;
+  }
+
+  .brandRow {
+    margin: 0;
+  }
+
+  .nav {
+    order: 3;
+    flex: 1 1 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.4rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navItem {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .sidebarFooter {
+    order: 2;
+    flex-direction: row;
+    gap: 0.5rem;
+    padding-top: 0;
+    border-top: none;
+    margin-left: auto;
+  }
+
+  .enrollLink {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .main {
+    padding: 1.5rem 1.25rem;
+  }
 }
