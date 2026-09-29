@@ -233,6 +233,27 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (path === "/consent/notice" && method === "GET") {
+    if (!auth(req, res, ["ADMIN", "STUDENT"])) return;
+    reply(res, 200, {
+      version: "2026-09-v1",
+      title: "Facial recognition consent",
+      controller: "Example University",
+      contact: "dpo@example.ac.ke",
+      sections: [
+        {
+          heading: "What we collect",
+          body: "A numerical template of your face.",
+        },
+        {
+          heading: "Your choice and your rights",
+          body: "You do not have to agree, and you can withdraw at any time.",
+        },
+      ],
+    });
+    return;
+  }
+
   if (path === "/students" && method === "GET") {
     if (!auth(req, res, ["ADMIN"])) return;
     reply(
@@ -241,6 +262,7 @@ const server = createServer(async (req, res) => {
       state.students.map((s) => ({
         ...s,
         face_enrolled: s.embedding_file != null,
+        consent_recorded: s.consent_recorded === true,
       }))
     );
     return;
@@ -276,7 +298,11 @@ const server = createServer(async (req, res) => {
       embedding_file: null,
     };
     state.students.push(student);
-    reply(res, 200, { ...student, face_enrolled: false });
+    reply(res, 200, {
+      ...student,
+      face_enrolled: false,
+      consent_recorded: false,
+    });
     return;
   }
 
@@ -288,6 +314,12 @@ const server = createServer(async (req, res) => {
   if (path === "/enroll/student-face" && method === "POST") {
     if (!auth(req, res, ["ADMIN"])) return;
     const fields = await readMultipartFields(req);
+    if (fields.consent_confirmed !== "true") {
+      return reply(res, 403, {
+        detail:
+          "Confirm the student has consented to facial recognition before enrolling their face.",
+      });
+    }
     if (!fields.files) {
       return reply(res, 400, {
         detail: "At least one reference photo is required.",
@@ -316,6 +348,7 @@ const server = createServer(async (req, res) => {
       year: fields.year ? Number(fields.year) : null,
       semester: fields.semester ? Number(fields.semester) : null,
       embedding_file: `${fields.student_id}.npy`,
+      consent_recorded: true,
     };
     state.students.push(student);
     reply(res, 200, { ...student, samples_used: 1, samples_skipped: 0 });

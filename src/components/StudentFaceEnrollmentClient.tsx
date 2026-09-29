@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ConsentNotice } from "@/lib/api";
 import styles from "./StudentFaceEnrollmentClient.module.css";
 
 // The step that actually creates the `students` table row (GET
@@ -13,7 +14,18 @@ export default function StudentFaceEnrollmentClient() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<ConsentNotice | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // The real notice text, so the admin can put it in front of the
+  // student instead of paraphrasing it — and so the checkbox below
+  // confirms consent to a specific version.
+  useEffect(() => {
+    fetch("/api/consent/notice")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setNotice(data))
+      .catch(() => setNotice(null));
+  }, []);
 
   async function handleSubmit(formData: FormData) {
     setSubmitting(true);
@@ -46,6 +58,9 @@ export default function StudentFaceEnrollmentClient() {
       if (typeof value === "string" && value !== "") {
         submission.append(key, value);
       }
+    }
+    if (formData.get("consent_confirmed") === "on") {
+      submission.append("consent_confirmed", "true");
     }
     for (const photo of photos) {
       submission.append("files", photo);
@@ -128,6 +143,38 @@ export default function StudentFaceEnrollmentClient() {
             exactly one face.
           </p>
         </label>
+        <div className={`${styles.fieldWide} ${styles.consent}`}>
+          <details className={styles.notice}>
+            <summary>
+              Read the consent notice
+              {notice ? ` (version ${notice.version})` : ""} to the student
+            </summary>
+            {notice ? (
+              <>
+                <p className={styles.noticeMeta}>
+                  Data controller: {notice.controller}. Contact:{" "}
+                  {notice.contact}.
+                </p>
+                {notice.sections.map((section) => (
+                  <div key={section.heading}>
+                    <h4>{section.heading}</h4>
+                    <p>{section.body}</p>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <p className={styles.noticeMeta}>Loading the notice…</p>
+            )}
+          </details>
+          <label className={styles.consentCheck}>
+            <input name="consent_confirmed" type="checkbox" required />
+            <span>
+              I have shown this student the consent notice and they have
+              agreed to facial recognition for campus access and class
+              attendance.
+            </span>
+          </label>
+        </div>
         <div className={styles.submitRow}>
           <button type="submit" disabled={submitting} className={styles.submit}>
             {submitting ? "Enrolling…" : "Enroll face"}

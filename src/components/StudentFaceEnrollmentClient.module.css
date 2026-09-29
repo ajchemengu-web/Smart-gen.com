@@ -82,3 +82,53 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.consent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.notice {
+  background: #0b0d12;
+  border: 1px solid #2c313b;
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  color: #c7cbd4;
+  font-size: 0.8rem;
+}
+
+.notice summary {
+  cursor: pointer;
+  color: #86a9ff;
+}
+
+.notice h4 {
+  margin: 0.8rem 0 0.2rem;
+  font-size: 0.8rem;
+  color: #e7e9ee;
+}
+
+.notice p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.noticeMeta {
+  color: #9aa2b1;
+  margin-top: 0.6rem !important;
+}
+
+.consentCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: #e7e9ee;
+  cursor: pointer;
+}
+
+.consentCheck input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}

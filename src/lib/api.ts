@@ -176,6 +176,10 @@ export function enrollStudentFace(
     course?: string;
     year?: string;
     semester?: string;
+    // "true" only when the admin has confirmed the student agreed to
+    // the current consent notice — the backend refuses (403) without
+    // it and records who confirmed.
+    consent_confirmed?: string;
   },
   photos: File[],
   token: string
@@ -186,6 +190,21 @@ export function enrollStudentFace(
     token,
     photos.map((file) => ({ field: "files", file }))
   );
+}
+
+// The exact text a person agrees to before their face is enrolled
+// (Alternative_Identifier's consent_service.py) — served by the
+// backend so every client shows the version that gets recorded.
+export type ConsentNotice = {
+  version: string;
+  title: string;
+  controller: string;
+  contact: string;
+  sections: { heading: string; body: string }[];
+};
+
+export function getConsentNotice(token: string) {
+  return request<ConsentNotice>("/consent/notice", undefined, token);
 }
 
 // ============================================================
@@ -267,6 +286,9 @@ export type Student = {
   hostel: string;
   room: string;
   face_enrolled: boolean;
+  // false on a face_enrolled student = enrolled before consent was
+  // recorded (or against an older notice version): a gap to chase.
+  consent_recorded: boolean;
 };
 
 export type Guest = {
@@ -287,8 +309,12 @@ export function getStudents(token: string) {
 // see StudentFaceEnrollmentClient for the admin-does-it-directly
 // alternative, which still works standalone via
 // POST /enroll/student-face.
-export type StudentRecordResult = Omit<Student, "face_enrolled"> & {
+export type StudentRecordResult = Omit<
+  Student,
+  "face_enrolled" | "consent_recorded"
+> & {
   face_enrolled: false;
+  consent_recorded: false;
 };
 
 export function createStudent(

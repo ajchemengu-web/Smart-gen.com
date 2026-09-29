@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
           course: field("course"),
           year: field("year"),
           semester: field("semester"),
+          consent_confirmed: field("consent_confirmed"),
         },
         photos,
         auth.session.accessToken
