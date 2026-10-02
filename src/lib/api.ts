@@ -107,6 +107,7 @@ export type LoginResult = {
   email: string;
   role: string;
   admin_tier: string | null;
+  department?: string | null;
   dashboard: string | null;
   access_token: string;
 };
@@ -117,6 +118,7 @@ export type EnrollResult = {
   role: string;
   admin_tier: string | null;
   location: string | null;
+  department?: string | null;
   dashboard: string | null;
 };
 
@@ -134,6 +136,7 @@ export function enroll(
     admin_tier?: string;
     linked_person_id?: string;
     location?: string;
+    department?: string;
   },
   token: string
 ) {

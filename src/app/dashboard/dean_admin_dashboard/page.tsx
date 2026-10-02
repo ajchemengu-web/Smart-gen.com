@@ -10,10 +10,10 @@ export default function DeanAdminDashboardPage() {
     <>
       <h1>Overview</h1>
       <p className={shell.subtitle}>
-        Department-scoped view: student roster and classification,
-        units/lectures totals, the department&apos;s timetable, and venue
-        camera access (docs/PRD.md §8). Filter by department, or leave it
-        blank for a system-wide view.
+        Your department&apos;s student roster and classification,
+        units/lectures totals, timetable, and venue cameras (docs/PRD.md
+        §8). The server limits this view to the department on your
+        account.
       </p>
       <DeanClient />
     </>

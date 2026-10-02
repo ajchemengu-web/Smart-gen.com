@@ -98,6 +98,7 @@ export async function enrollAction(
     formData.get("linked_person_id") ?? ""
   ).trim();
   const location = String(formData.get("location") ?? "").trim();
+  const department = String(formData.get("department") ?? "").trim();
 
   if (!username || !password || !email || !role) {
     return { error: "Username, password, email, and role are required." };
@@ -105,6 +106,15 @@ export async function enrollAction(
 
   if (role === "GUARD" && !location) {
     return { error: "Guards require a location (checkpoint)." };
+  }
+
+  const isDean = role === "ADMIN" && adminTier === "DEAN";
+
+  if (isDean && !department) {
+    return {
+      error:
+        "A Dean needs a department — the school whose data they may see.",
+    };
   }
 
   const cookieStore = await cookies();
@@ -130,6 +140,7 @@ export async function enrollAction(
         admin_tier: role === "ADMIN" ? adminTier : undefined,
         linked_person_id: linkedPersonId || undefined,
         location: role === "GUARD" ? location : undefined,
+        department: isDean ? department : undefined,
       },
       session.accessToken
     );

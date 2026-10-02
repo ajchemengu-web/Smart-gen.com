@@ -12,50 +12,11 @@ import tableStyles from "@/components/DataTable.module.css";
 import styles from "./dean.module.css";
 
 export default function DeanClient() {
-  const [department, setDepartment] = useState("");
-  const [appliedDepartment, setAppliedDepartment] = useState("");
   const [summary, setSummary] = useState<DeanSummary | null>(null);
   const [roster, setRoster] = useState<DeanRosterEntry[]>([]);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  async function load(dept: string) {
-    const query = dept ? `?department=${encodeURIComponent(dept)}` : "";
-
-    try {
-      const [summaryRes, rosterRes, timetableRes, camerasRes] =
-        await Promise.all([
-          fetch(`/api/dean/summary${query}`, { cache: "no-store" }),
-          fetch(`/api/dean/roster${query}`, { cache: "no-store" }),
-          fetch(`/api/timetable${query}`, { cache: "no-store" }),
-          fetch(`/api/cameras${query}`, { cache: "no-store" }),
-        ]);
-
-      if (anyUnauthorized([summaryRes, rosterRes, timetableRes, camerasRes])) {
-        await handleUnauthorized();
-        return;
-      }
-
-      if (
-        !summaryRes.ok ||
-        !rosterRes.ok ||
-        !timetableRes.ok ||
-        !camerasRes.ok
-      ) {
-        setError("Backend returned an error.");
-        return;
-      }
-
-      setSummary(await summaryRes.json());
-      setRoster(await rosterRes.json());
-      setTimetable(await timetableRes.json());
-      setCameras(await camerasRes.json());
-      setError(null);
-    } catch {
-      setError("Could not reach the backend.");
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +33,16 @@ export default function DeanClient() {
 
         if (anyUnauthorized([summaryRes, rosterRes, timetableRes, camerasRes])) {
           if (!cancelled) await handleUnauthorized();
+          return;
+        }
+
+        if (summaryRes.status === 403) {
+          const body = await summaryRes.json().catch(() => null);
+          if (!cancelled) {
+            setError(
+              body?.detail ?? "You do not have access to a department."
+            );
+          }
           return;
         }
 
@@ -112,53 +83,15 @@ export default function DeanClient() {
     };
   }, []);
 
-  function handleApplyFilter() {
-    setAppliedDepartment(department);
-    load(department);
-  }
-
-  function handleClearFilter() {
-    setDepartment("");
-    setAppliedDepartment("");
-    load("");
-  }
-
   return (
     <div className={styles.wrapper}>
       {error && <p className={styles.banner}>{error}</p>}
 
       <section className={styles.section}>
-        <h2>Department</h2>
-        <div className={styles.filters}>
-          <input
-            placeholder="e.g. School of Computing"
-            value={department}
-            onChange={(event) => setDepartment(event.target.value)}
-          />
-          <button
-            type="button"
-            className={styles.filterButton}
-            onClick={handleApplyFilter}
-          >
-            View department
-          </button>
-          {appliedDepartment && (
-            <button
-              type="button"
-              className={styles.filterButton}
-              onClick={handleClearFilter}
-            >
-              View all departments
-            </button>
-          )}
-        </div>
-      </section>
-
-      <section className={styles.section}>
         <h2>
-          {appliedDepartment
-            ? `${appliedDepartment} — overview`
-            : "All departments — overview"}
+          {summary?.department
+            ? `${summary.department} — overview`
+            : "Department overview"}
         </h2>
         <div className={styles.cards}>
           <div className={styles.card}>

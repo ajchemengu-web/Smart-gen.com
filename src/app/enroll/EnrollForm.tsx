@@ -21,6 +21,7 @@ export default function EnrollForm({
 }) {
   const [state, action, pending] = useActionState(enrollAction, undefined);
   const [role, setRole] = useState<string>("STUDENT");
+  const [adminTier, setAdminTier] = useState<string>("");
 
   return (
     <form action={action} className={styles.form}>
@@ -57,7 +58,11 @@ export default function EnrollForm({
       {role === "ADMIN" && (
         <label className={styles.field}>
           <span>Admin tier</span>
-          <select name="admin_tier" defaultValue="">
+          <select
+            name="admin_tier"
+            value={adminTier}
+            onChange={(event) => setAdminTier(event.target.value)}
+          >
             <option value="" disabled>
               Select a tier
             </option>
@@ -67,6 +72,21 @@ export default function EnrollForm({
               </option>
             ))}
           </select>
+        </label>
+      )}
+
+      {role === "ADMIN" && adminTier === "DEAN" && (
+        <label className={styles.field}>
+          <span>Department (the school this Dean may see)</span>
+          <input
+            name="department"
+            placeholder="e.g. School of Computing"
+            required
+          />
+          <small>
+            Must match the department written on the students, units and
+            cameras exactly — the Dean sees nothing outside it.
+          </small>
         </label>
       )}
 
