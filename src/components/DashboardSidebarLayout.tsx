@@ -6,10 +6,13 @@ import styles from "./DashboardSidebarLayout.module.css";
 export default function DashboardSidebarLayout({
   roleLabel,
   sections,
+  showEnrollLink = false,
   children,
 }: {
   roleLabel: string;
   sections: SidebarSection[];
+  // Account creation is the Original Admin's alone (see src/proxy.ts).
+  showEnrollLink?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -40,9 +43,11 @@ export default function DashboardSidebarLayout({
         </div>
         <DashboardSidebarNav sections={sections} />
         <div className={styles.sidebarFooter}>
-          <Link href="/enroll" className={styles.enrollLink}>
-            Enroll a user
-          </Link>
+          {showEnrollLink && (
+            <Link href="/enroll" className={styles.enrollLink}>
+              Enroll a user
+            </Link>
+          )}
           <LogoutButton />
         </div>
       </aside>

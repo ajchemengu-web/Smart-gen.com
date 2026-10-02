@@ -30,7 +30,11 @@ export default function OriginalAdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardSidebarLayout roleLabel="Original Admin" sections={SECTIONS}>
+    <DashboardSidebarLayout
+      roleLabel="Original Admin"
+      sections={SECTIONS}
+      showEnrollLink
+    >
       {children}
     </DashboardSidebarLayout>
   );

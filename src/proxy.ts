@@ -35,15 +35,15 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (pathname === "/enroll") {
-    // Mirrors the backend: POST /enroll requires an ADMIN
-    // access_token, any tier (src/api/deps.py in
-    // Alternative_Identifier) — same rule enforced here so a
-    // logged-out or non-admin visitor never even sees the form.
+    // Mirrors the backend: POST /enroll creates login accounts of any
+    // role (admins included), so it requires the ORIGINAL admin tier
+    // (src/api/main.py in Alternative_Identifier) — same rule enforced
+    // here so nobody else even sees the form.
     if (!session) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (session.role !== "ADMIN") {
+    if (session.role !== "ADMIN" || session.adminTier !== "ORIGINAL") {
       return NextResponse.redirect(
         new URL(`/dashboard/${session.dashboard}`, request.url)
       );
