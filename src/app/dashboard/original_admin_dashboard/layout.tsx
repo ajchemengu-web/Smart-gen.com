@@ -22,6 +22,10 @@ const SECTIONS = [
     href: "/dashboard/original_admin_dashboard/facial-enrollment",
     label: "Facial enrollment",
   },
+  {
+    href: "/dashboard/original_admin_dashboard/audit-log",
+    label: "Audit log",
+  },
 ];
 
 export default function OriginalAdminLayout({

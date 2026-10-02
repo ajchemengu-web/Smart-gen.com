@@ -1110,3 +1110,44 @@ export function apiErrorResponse(error: unknown) {
     error instanceof ApiError ? error.message : "Request failed";
   return { status, body: { detail: message } };
 }
+
+// ============================================================
+// READ AUDIT LOG (Original Admin only — docs/DPIA.md R3)
+// ============================================================
+
+export type AuditEntry = {
+  id: number;
+  occurred_at: string;
+  last_seen_at: string;
+  times: number;
+  username: string;
+  role: string | null;
+  admin_tier: string | null;
+  department: string | null;
+  action: string;
+  subject_id: string;
+  params: Record<string, string>;
+};
+
+export function getAuditLog(
+  token: string,
+  filters?: {
+    username?: string;
+    action?: string;
+    subject?: string;
+    since?: string;
+    until?: string;
+    limit?: number;
+  }
+) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters ?? {})) {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  }
+  const query = params.toString();
+  return request<AuditEntry[]>(
+    `/admin/audit${query ? `?${query}` : ""}`,
+    undefined,
+    token
+  );
+}
